@@ -1,0 +1,12 @@
+*.config
+*.psess
+*.vsp
+*.xlsx
+*.exe
+obj/
+bin/
+*.resx
+*.settings
+Properties/
+*.jar
+*.manifest
