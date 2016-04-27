@@ -349,7 +349,7 @@ namespace GeneticAlgorithm
 
 			public int GetHashCode( ProjectSchedule ps )
 			{
-				return ps.GetHashCode();
+				return ps.GetFitness( env ).GetHashCode();
 			}
 		}
 	}
