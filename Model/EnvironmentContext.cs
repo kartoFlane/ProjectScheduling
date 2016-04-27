@@ -104,7 +104,13 @@ namespace GeneticAlgorithm.Model
 			// Preallocate space in the collections. Saves ~6% of runtime.
 			Dictionary<int, int> busyResourceMap = new Dictionary<int, int>( Resources.Count );
 			Dictionary<int, int> resourceTaskMap = new Dictionary<int, int>( Resources.Count );
-			// HashSet doesn't expose constructor with settable initial capacity.
+
+			foreach ( int rId in Resources.Keys ) {
+				busyResourceMap[rId] = -1;
+				resourceTaskMap[rId] = -1;
+			}
+
+			// HashSet doesn't expose an initial capacity constructor.
 			// Requires abusing implementation detail of the class to set it.
 			HashSet<int> completedTasks = new HashSet<int>( _initialCapacityList );
 			completedTasks.Clear();
@@ -114,63 +120,67 @@ namespace GeneticAlgorithm.Model
 
 			List<TaskData> pendingTasks = specimen.Genotype.OrderBy( td => td.Priority ).ToList();
 
+			// TODO: Optionally sort by time to complete, cost, or pick randomly here,
+			// for tasks with the same priority.
+
 			while ( completedTasks.Count < Tasks.Count ) {
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
+				bool allBusy = true;
 				foreach ( int rId in Resources.Keys ) {
-					if ( busyResourceMap.ContainsKey( rId ) && busyResourceMap[rId] <= currentTime ) {
+					int taskDoneTime = busyResourceMap[rId];
+
+					if ( taskDoneTime < 0 ) {
+						// A resource is idle
+						allBusy = false;
+					}
+					else if ( taskDoneTime <= currentTime ) {
 						completedTasks.Add( resourceTaskMap[rId] );
-						busyResourceMap.Remove( rId );
-						resourceTaskMap.Remove( rId );
+						busyResourceMap[rId] = -1;
+						resourceTaskMap[rId] = -1;
+
+						// A resource is being released
+						allBusy = false;
 					}
 				}
 
-				// If all resources are currently busy, then don't bother needlessly
-				// looking for a task to insert
-				if ( busyResourceMap.Count == Resources.Count )
+				if ( allBusy ) {
+					// If all resources are currently busy, then don't bother needlessly
+					// looking for a task to insert
 					continue;
+				}
 
-				for ( int curPrio = 0; curPrio < Tasks.Count; ++curPrio ) {
-					// Get tasks at current priority level, or higher...
-					//IEnumerable<int> pendingTasks = specimen.GetTasksWithPriority( curPrio );
-					// ...that haven't been completed yet / aren't currently being processed.
-					//pendingTasks = pendingTasks.Except( completedTasks ).Except( resourceTaskMap.Values );
+				for ( int i = 0; i < pendingTasks.Count; ++i ) {
+					TaskData td = pendingTasks[i];
 
-					// TODO: Optionally sort by time to complete, cost, or pick randomly here,
-					// for tasks with the same priority.
+					Resource r = Resources[td.ResourceId];
+					Task t = Tasks[td.TaskId];
 
-					for ( int i = 0; i < pendingTasks.Count; ++i ) {
-						TaskData td = pendingTasks[i];
+					if ( AlgorithmicPrerequisites && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
+						continue;
+					}
 
-						Resource r = Resources[td.ResourceId];
-						Task t = Tasks[td.TaskId];
+					if ( busyResourceMap[td.ResourceId] >= 0 ) {
+						// Resource is busy, we can't complete this task at this point in time.
+						continue;
+					}
 
-						if ( AlgorithmicPrerequisites && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
-							continue;
-						}
+					// We can use the resource, so mark it as busy
+					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
+					resourceTaskMap[td.ResourceId] = td.TaskId;
 
-						if ( busyResourceMap.ContainsKey( td.ResourceId ) ) {
-							// Resource is busy, we can't complete this task at this point in time.
-							continue;
-						}
-
-						// We can use the resource, so mark it as busy
-						busyResourceMap.Add( td.ResourceId, currentTime + t.Duration );
-						resourceTaskMap.Add( td.ResourceId, td.TaskId );
-
-						if ( !AlgorithmicPrerequisites ) {
-							// Apply penalty for missing predecessor tasks
-							foreach ( int reqId in t.Predecessors ) {
-								if ( !completedTasks.Contains( reqId ) ) {
-									penalty += PenaltyPrerequisite;
-								}
+					if ( !AlgorithmicPrerequisites ) {
+						// Apply penalty for missing predecessor tasks
+						foreach ( int reqId in t.Predecessors ) {
+							if ( !completedTasks.Contains( reqId ) ) {
+								penalty += PenaltyPrerequisite;
 							}
 						}
-
-						pendingTasks.Remove( td );
-						--i;
 					}
+
+					pendingTasks.Remove( td );
+					--i;
 				}
 			}
 
