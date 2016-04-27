@@ -6,6 +6,7 @@ namespace GeneticAlgorithm.Model
 {
 	public class EnvironmentContext
 	{
+		private static IEnumerable<int> _initialCapacityList;
 		#region Probabilities
 
 		public double ProbabilityMutation { get; set; }
@@ -40,11 +41,14 @@ namespace GeneticAlgorithm.Model
 
 		public Random Random { get; private set; }
 
+
 		public EnvironmentContext()
 		{
 			Resources = new Dictionary<int, Resource>();
 			Tasks = new Dictionary<int, Task>();
 			Random = new Random();
+
+			_initialCapacityList = Enumerable.Range( 0, Tasks.Count );
 		}
 
 		#region Population Generation / Mutation
@@ -102,7 +106,7 @@ namespace GeneticAlgorithm.Model
 			Dictionary<int, int> resourceTaskMap = new Dictionary<int, int>( Resources.Count );
 			// HashSet doesn't expose constructor with settable initial capacity.
 			// Requires abusing implementation detail of the class to set it.
-			HashSet<int> completedTasks = new HashSet<int>( Enumerable.Range( 0, Tasks.Count ) );
+			HashSet<int> completedTasks = new HashSet<int>( _initialCapacityList );
 			completedTasks.Clear();
 
 			int currentTime = 0;
