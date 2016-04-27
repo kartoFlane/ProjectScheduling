@@ -143,8 +143,8 @@ namespace GeneticAlgorithm
 					// Count clones
 					Console.Write( "\t\tClones... " );
 					double cc = population.Count - population.Distinct( comparer ).Count();
+					Console.Write( "\t\tDone, #: " + cc );
 					if ( cc / _populationSize > _cloneThreshold ) {
-						Console.Write( "\t\tDone, #: " + cc );
 						// If clones make up more than 10% of the population, then start mutating them.
 						Console.Write( " | Grouping... " );
 						var c = population.GroupBy( spec => spec.GetFitness( env ) );
@@ -155,9 +155,6 @@ namespace GeneticAlgorithm
 							}
 						}
 						Console.Write( "Done" );
-					}
-					else {
-						Console.Write( "\t\tDone, N/A" );
 					}
 				}
 
@@ -199,7 +196,7 @@ namespace GeneticAlgorithm
 			File.Copy( fi.FullName, "_solutions/result.def", true );
 			DefIO.WriteDEF( env, allTimeBest, "_solutions/result.sol", debugOutput );
 			DumpLogs( "_solutions/dump.txt", minMap, maxMap, avgMap );
-			DumpParams( "_solutions/params.txt", env );
+			DumpParams( "_solutions/params.txt", env, fi.Name );
 		}
 
 		// ==================================================================================================
@@ -319,10 +316,11 @@ namespace GeneticAlgorithm
 			File.WriteAllText( path, buf.ToString() );
 		}
 
-		private static void DumpParams( string path, EnvironmentContext env )
+		private static void DumpParams( string path, EnvironmentContext env, string defFileName )
 		{
 			StringBuilder buf = new StringBuilder();
 
+			buf.AppendFormat( "File: {0}\n", defFileName );
 			buf.AppendFormat( "Population: {0}\n", _populationSize );
 			buf.AppendFormat( "Generations: {0}\n", _generationLimit );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Breeder fraction: {0}\n", _breederFraction );
