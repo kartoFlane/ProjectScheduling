@@ -119,6 +119,8 @@ namespace GeneticAlgorithm
 			int timeStart = Environment.TickCount;
 
 			while ( minMap[generationIndex] > _fitnessThreshold && generationIndex < _generationLimit ) {
+				int genTimeStart = Environment.TickCount;
+
 				++generationIndex;
 				Console.Write( "Generation: {0,4}", generationIndex );
 
@@ -174,7 +176,6 @@ namespace GeneticAlgorithm
 				Console.Write( "\t\tMIN: {0:F6}", minMap[generationIndex] );
 				Console.Write( "\t\tAVG: {0:F6}", avgMap[generationIndex] );
 				Console.Write( "\t\tMAX: {0:F6}", maxMap[generationIndex] );
-				Console.WriteLine();
 
 				// Find all-time best
 				foreach ( ProjectSchedule specimen in population ) {
@@ -183,6 +184,8 @@ namespace GeneticAlgorithm
 						allTimeBest = specimen.DeepCopy();
 					}
 				}
+
+				Console.WriteLine( "\t\tTime/Gen: {0}s", ( Environment.TickCount - genTimeStart ) / 1000.0 );
 			}
 
 			Console.WriteLine();
