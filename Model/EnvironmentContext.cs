@@ -108,6 +108,8 @@ namespace GeneticAlgorithm.Model
 			int currentTime = 0;
 			double penalty = 0;
 
+			List<TaskData> pendingTasks = specimen.Genotype.OrderBy( td => td.Priority ).ToList();
+
 			while ( completedTasks.Count < Tasks.Count ) {
 				++currentTime;
 
@@ -127,25 +129,22 @@ namespace GeneticAlgorithm.Model
 
 				for ( int curPrio = 0; curPrio < Tasks.Count; ++curPrio ) {
 					// Get tasks at current priority level, or higher...
-					IEnumerable<int> pendingTasks = specimen.GetTasksWithPriority( curPrio );
+					//IEnumerable<int> pendingTasks = specimen.GetTasksWithPriority( curPrio );
 					// ...that haven't been completed yet / aren't currently being processed.
-					pendingTasks = pendingTasks.Except( completedTasks ).Except( resourceTaskMap.Values );
-
-					if ( AlgorithmicPrerequisites ) {
-						pendingTasks = pendingTasks.Where( e =>
-						{
-							Task t = Tasks[e];
-							return t.Predecessors.All( p => completedTasks.Contains( p ) );
-						} );
-					}
+					//pendingTasks = pendingTasks.Except( completedTasks ).Except( resourceTaskMap.Values );
 
 					// TODO: Optionally sort by time to complete, cost, or pick randomly here,
 					// for tasks with the same priority.
 
-					foreach ( int taskId in pendingTasks ) {
-						TaskData td = specimen.Genotype[taskId];
+					for ( int i = 0; i < pendingTasks.Count; ++i ) {
+						TaskData td = pendingTasks[i];
+
 						Resource r = Resources[td.ResourceId];
 						Task t = Tasks[td.TaskId];
+
+						if ( AlgorithmicPrerequisites && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
+							continue;
+						}
 
 						if ( busyResourceMap.ContainsKey( td.ResourceId ) ) {
 							// Resource is busy, we can't complete this task at this point in time.
@@ -164,6 +163,9 @@ namespace GeneticAlgorithm.Model
 								}
 							}
 						}
+
+						pendingTasks.Remove( td );
+						--i;
 					}
 				}
 			}
