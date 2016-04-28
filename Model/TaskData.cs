@@ -16,6 +16,18 @@ namespace GeneticAlgorithm.Model
 			Priority = p;
 		}
 
+		public TaskData( TaskData other )
+		{
+			taskId = other.taskId;
+			ResourceId = other.ResourceId;
+			Priority = other.Priority;
+		}
+
+		public TaskData Copy()
+		{
+			return new TaskData( this );
+		}
+
 		public bool Mutate( EnvironmentContext env, double overrideMutationChance )
 		{
 			bool changed = false;

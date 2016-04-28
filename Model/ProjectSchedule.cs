@@ -27,7 +27,7 @@ namespace GeneticAlgorithm.Model
 		public ProjectSchedule DeepCopy()
 		{
 			ProjectSchedule result = new ProjectSchedule();
-			Genotype.ForEach( e => result.Genotype.Add( e ) );
+			Genotype.ForEach( e => result.Genotype.Add( e.Copy() ) );
 			return result;
 		}
 
@@ -70,9 +70,9 @@ namespace GeneticAlgorithm.Model
 		{
 			for ( int i = 0; i < parentA.Genotype.Count; ++i ) {
 				if ( i <= start )
-					Genotype.Add( parentA.Genotype[i] );
+					Genotype.Add( parentA.Genotype[i].Copy() );
 				else
-					Genotype.Add( parentB.Genotype[i] );
+					Genotype.Add( parentB.Genotype[i].Copy() );
 			}
 			recomputeFitness = true;
 		}
