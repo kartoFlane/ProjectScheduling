@@ -19,7 +19,7 @@ namespace GeneticAlgorithm
 		private const double _crossoverChance = 0.4;
 
 		private const bool _algorithmicPrerequisites = true;
-		private const bool _cloneElimination = true;
+		private const ECloneEliminationStrategy _cloneStrat = ECloneEliminationStrategy.ELIMINATION;
 
 		// Stop conditions
 		private const int _generationLimit = 50;
@@ -31,8 +31,8 @@ namespace GeneticAlgorithm
 			// Setup the environment for the genetic algorithm
 			EnvironmentContext env = new EnvironmentContext();
 
-			const bool debugOutput = true;
-			const bool eliminateClones = _cloneElimination;
+			bool debugOutput = true;
+			ECloneEliminationStrategy cloneStrat = _cloneStrat;
 
 			//env.TimeWeight = 0.7;
 			env.ProbabilityMutation = _mutationChance;
@@ -41,7 +41,7 @@ namespace GeneticAlgorithm
 			env.AlgorithmicPrerequisites = _algorithmicPrerequisites;
 			env.PenaltyPrerequisite = 0.3;
 
-			string[] files = Directory.GetFiles( "_defs/", "*.def" );
+			string[] files = Directory.GetFiles( "../../../_defs/", "*.def" );
 			Console.WriteLine( string.Format( "Found {0} .def files: ", files.Length ) );
 			for ( int i = 0; i < files.Length; ++i ) {
 				Console.WriteLine( string.Format( "{0,2}.\t{1}", i, new FileInfo( files[i] ).Name ) );
@@ -139,23 +139,40 @@ namespace GeneticAlgorithm
 				population.ForEach( e => e.Mutate( env ) );
 				Console.Write( "Done" );
 
-				if ( eliminateClones ) {
-					// Count clones
-					Console.Write( "\t\tClones... " );
-					double cc = population.Count - population.Distinct( comparer ).Count();
-					Console.Write( "\t\tDone, #: " + cc );
-					if ( cc / _populationSize > _cloneThreshold ) {
-						// If clones make up more than 10% of the population, then start mutating them.
-						Console.Write( " | Grouping... " );
-						var c = population.GroupBy( spec => spec.GetFitness( env ) );
-						Console.Write( "Done, Re-Mut... " );
-						foreach ( var g in c ) {
-							foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
-								clone.Mutate( env, 10 * env.ProbabilityMutation );
+				// Count clones
+				Console.Write( "\t\tClones... " );
+				double cc = population.Count - population.Distinct( comparer ).Count();
+				Console.Write( "Done, #: " + cc );
+
+				if ( cc / _populationSize > _cloneThreshold ) {
+					var c = population.GroupBy( spec => spec.GetFitness( env ) );
+
+					Console.Write( "\t\tEliminating... " );
+					switch ( cloneStrat ) {
+						case ECloneEliminationStrategy.MUTATION: {
+							foreach ( var g in c ) {
+								foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
+									clone.Mutate( env, 5 * env.ProbabilityMutation );
+								}
 							}
+						} break;
+
+						case ECloneEliminationStrategy.ELIMINATION: {
+							c = c.OrderByDescending( g => g.Key );
+							foreach ( var g in c ) {
+								foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
+									if ( population.Count <= _populationSize )
+										break;
+									population.Remove( clone );
+								}
+							}
+						} break;
+
+						default: {
+							throw new NotImplementedException( cloneStrat.ToString() );
 						}
-						Console.Write( "Done" );
 					}
+					Console.Write( "Done" );
 				}
 
 				// Selection
@@ -193,10 +210,10 @@ namespace GeneticAlgorithm
 				minMap.Min( e => e.Value ), maxMap.Max( e => e.Value ) );
 			Console.WriteLine( "All-time best: {0:F6}", allTimeBest.GetFitness( env ) );
 
-			File.Copy( fi.FullName, "_solutions/result.def", true );
-			DefIO.WriteDEF( env, allTimeBest, "_solutions/result.sol", debugOutput );
-			DumpLogs( "_solutions/dump.txt", minMap, maxMap, avgMap );
-			DumpParams( "_solutions/params.txt", env, fi.Name );
+			File.Copy( fi.FullName, "../../../_solutions/result.def", true );
+			DefIO.WriteDEF( env, allTimeBest, "../../../_solutions/result.sol", debugOutput );
+			DumpLogs( "../../../_solutions/dump.txt", minMap, maxMap, avgMap );
+			DumpParams( "../../../_solutions/params.txt", env, fi.Name );
 		}
 
 		// ==================================================================================================
@@ -328,7 +345,7 @@ namespace GeneticAlgorithm
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Mutation chance: {0}\n", env.ProbabilityMutation );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Crossover chance: {0}\n", env.ProbabilityOffspring );
 			buf.AppendFormat( "Algorithmic prereq: {0}\n", env.AlgorithmicPrerequisites );
-			buf.AppendFormat( "Clone elimination: {0}\n", _cloneElimination );
+			buf.AppendFormat( "Clone elim. strategy: {0}\n", _cloneStrat.ToString() );
 
 			File.WriteAllText( path, buf.ToString() );
 		}
@@ -351,6 +368,11 @@ namespace GeneticAlgorithm
 			{
 				return ps.GetFitness( env ).GetHashCode();
 			}
+		}
+
+		private enum ECloneEliminationStrategy
+		{
+			ELIMINATION, MUTATION
 		}
 	}
 }
