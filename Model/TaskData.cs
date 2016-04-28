@@ -3,7 +3,7 @@ namespace GeneticAlgorithm.Model
 {
 	public class TaskData
 	{
-		public int TaskId { get; private set; }
+		public readonly int taskId;
 
 		public int ResourceId { get; set; }
 
@@ -11,7 +11,7 @@ namespace GeneticAlgorithm.Model
 
 		public TaskData( int tId, int rId, int p )
 		{
-			TaskId = tId;
+			taskId = tId;
 			ResourceId = rId;
 			Priority = p;
 		}
@@ -22,7 +22,7 @@ namespace GeneticAlgorithm.Model
 
 			if ( env.Random.NextDouble() < overrideMutationChance ) {
 				int old = ResourceId;
-				ResourceId = env.RandomResourceId( TaskId );
+				ResourceId = env.RandomResourceId( taskId );
 				changed |= old != ResourceId;
 			}
 
@@ -42,7 +42,7 @@ namespace GeneticAlgorithm.Model
 
 		public override string ToString()
 		{
-			return string.Format( "( id: {0}, resId: {1}, p: {2} )", TaskId, ResourceId, Priority );
+			return string.Format( "( id: {0}, resId: {1}, p: {2} )", taskId, ResourceId, Priority );
 		}
 	}
 }
