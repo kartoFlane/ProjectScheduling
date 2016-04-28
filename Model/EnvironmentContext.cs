@@ -7,6 +7,8 @@ namespace GeneticAlgorithm.Model
 	public class EnvironmentContext
 	{
 		private static IEnumerable<int> _initialCapacityList;
+		private static Dictionary<int, List<int>> _taskResourceMap;
+
 		#region Probabilities
 
 		public double ProbabilityMutation { get; set; }
@@ -48,42 +50,67 @@ namespace GeneticAlgorithm.Model
 			Tasks = new Dictionary<int, Task>();
 			Random = new Random();
 
+			_taskResourceMap = new Dictionary<int, List<int>>();
+
 			_initialCapacityList = Enumerable.Range( 0, Tasks.Count );
+		}
+
+		public void ComputeTaskResourceCache()
+		{
+			foreach ( int taskId in Tasks.Keys ) {
+				Task t = Tasks[taskId];
+
+				var resSet = Resources.Values.ToList().FindAll( r =>
+				{
+					bool result = true;
+					foreach ( KeyValuePair<int, int> p in t.SkillRequirements ) {
+						if ( !r.SkillPool.ContainsKey( p.Key ) )
+							return false;
+
+						result &= r.SkillPool[p.Key] >= p.Value;
+					}
+					return result;
+				} ).Select( r => r.Id ).ToList();
+
+				if ( resSet.Count == 0 ) {
+					throw new Exception( "DEF error: no resources can do task #" + taskId + "!" );
+				}
+
+				_taskResourceMap[taskId] = resSet;
+			}
 		}
 
 		#region Population Generation / Mutation
 
 		public int RandomResourceId( int taskId )
 		{
-			Task t = Tasks[taskId];
-			var resSet = Resources.Values.ToList().FindAll( r =>
-			{
-				bool result = true;
-				foreach ( KeyValuePair<int, int> p in t.SkillRequirements ) {
-					if ( !r.SkillPool.ContainsKey( p.Key ) )
-						return false;
-
-					result &= r.SkillPool[p.Key] >= p.Value;
-				}
-				return result;
-			} );
-
-			if ( resSet.Count == 0 ) {
-				throw new Exception( "DEF error: no resources can do task #" + taskId + "!" );
-			}
-
-			return Random.From( resSet ).Id;
+			return Random.From( _taskResourceMap[taskId] );
 		}
 
-		public int RandomPriority( int curValue = -1 )
+		public int RandomPriority( int curValue = -1, int stdev = 10 )
 		{
 			if ( curValue < 0 ) {
 				return Random.Next( 0, Tasks.Count );
 			}
 			else {
-				return (int)Math.Max( 0, Math.Min( Tasks.Count - 1,
-					Math.Round( Random.NextGaussian( curValue, Tasks.Count / 2 ) ) ) );
+				double d = Random.NextGaussian( curValue, stdev );
+
+				// Round away from 0, so that we always have a change if we do mutate
+				if ( d > 0 && d < 1 )
+					d = 1;
+				if ( d < 0 && d > -1 )
+					d = -1;
+				if ( d == 0 )
+					d = Random.NextBool() ? 1 : -1;
+
+				// Don't clamp the priority, let it run wild.
+				return (int)Math.Max( 0, Math.Round( d ) );
 			}
+		}
+
+		private int Clamp( int v, int min, int max )
+		{
+			return Math.Min( max, Math.Max( min, v ) );
 		}
 
 		public List<ProjectSchedule> GeneratePopulation( int count )
@@ -155,7 +182,7 @@ namespace GeneticAlgorithm.Model
 					TaskData td = pendingTasks[i];
 
 					Resource r = Resources[td.ResourceId];
-					Task t = Tasks[td.TaskId];
+					Task t = Tasks[td.taskId];
 
 					if ( AlgorithmicPrerequisites && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
 						continue;
@@ -168,7 +195,7 @@ namespace GeneticAlgorithm.Model
 
 					// We can use the resource, so mark it as busy
 					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
-					resourceTaskMap[td.ResourceId] = td.TaskId;
+					resourceTaskMap[td.ResourceId] = td.taskId;
 
 					if ( !AlgorithmicPrerequisites ) {
 						// Apply penalty for missing predecessor tasks

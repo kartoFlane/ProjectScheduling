@@ -79,6 +79,8 @@ namespace GeneticAlgorithm.Model
 
 				env.Tasks.Add( id, new Task( id, duration, skillReqs, prereqs ) );
 			}
+
+			env.ComputeTaskResourceCache();
 		}
 
 		public static void WriteDEF(
@@ -135,7 +137,7 @@ namespace GeneticAlgorithm.Model
 					TaskData td = pendingTasks[i];
 
 					Resource r = env.Resources[td.ResourceId];
-					Task t = env.Tasks[td.TaskId];
+					Task t = env.Tasks[td.taskId];
 
 					if ( env.AlgorithmicPrerequisites && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
 						continue;
@@ -148,7 +150,7 @@ namespace GeneticAlgorithm.Model
 
 					// We can use the resource, so mark it as busy
 					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
-					resourceTaskMap[td.ResourceId] = td.TaskId;
+					resourceTaskMap[td.ResourceId] = td.taskId;
 
 					if ( !env.AlgorithmicPrerequisites ) {
 						foreach ( int reqId in t.Predecessors ) {
@@ -170,7 +172,7 @@ namespace GeneticAlgorithm.Model
 						buf.Append( currentTime ).Append( " " );
 					}
 
-					buf.Append( td.ResourceId + 1 ).Append( "-" ).Append( td.TaskId + 1 );
+					buf.Append( td.ResourceId + 1 ).Append( "-" ).Append( td.taskId + 1 );
 					buf.Append( " " );
 				}
 
