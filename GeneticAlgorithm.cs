@@ -35,10 +35,20 @@ namespace ProjectScheduling
 
 		private volatile bool terminate = false;
 
+		public int GenerationLimit { get; set; }
+		public int PopulationSize { get; set; }
+
 		public static void Main()
 		{
 			GeneticAlgorithm ga = new GeneticAlgorithm();
+
 			ga.Start();
+		}
+
+		public GeneticAlgorithm()
+		{
+			GenerationLimit = _generationLimit;
+			PopulationSize = _populationSize;
 		}
 
 		public void Start()
@@ -117,10 +127,10 @@ namespace ProjectScheduling
 			avgMap = new Dictionary<int, double>();
 
 			Console.Write( "Generating initial population..." );
-			List<ProjectSchedule> population = env.GeneratePopulation( _populationSize );
+			List<ProjectSchedule> population = env.GeneratePopulation( PopulationSize );
 			Console.WriteLine( " Done." );
 
-			UpdateLogs( env, population, 0, minMap, maxMap, avgMap );
+			UpdateLogs( population, 0, minMap, maxMap, avgMap );
 
 			allTimeBest = null;
 			double startMin = minMap.Min( e => e.Value );
@@ -133,22 +143,21 @@ namespace ProjectScheduling
 			int generationIndex = 0;
 			int timeStart = Environment.TickCount;
 
-			while ( !terminate && minMap[generationIndex] > _fitnessThreshold && generationIndex < _generationLimit ) {
-
+			while ( !terminate && minMap[generationIndex] > _fitnessThreshold && generationIndex < GenerationLimit ) {
 				int genTimeStart = Environment.TickCount;
 
 				++generationIndex;
 				Console.Write( "Generation: {0,4}", generationIndex );
 
 				// Crossover
-				var q = population.Take( (int)( _breederFraction * _populationSize ) ).ToList();
+				var q = population.Take( (int)( _breederFraction * PopulationSize ) ).ToList();
 
 				Console.Write( "\t\tCO... " );
 				//CrossOver_FalloffNormal( env, population, q );
 				//CrossOver_FalloffLinear( env, population, q );
 				//CrossOver_SimplePairs( env, population, q );
 				CrossOver_EqualOpportunity( env, population, q );
-				Console.Write( "Done, delta: {0,3}", population.Count - _populationSize );
+				Console.Write( "Done, delta: {0,3}", population.Count - PopulationSize );
 
 				Console.Write( " | Mut... " );
 				// Mutation
@@ -160,7 +169,7 @@ namespace ProjectScheduling
 				double cc = population.Count - population.Distinct( comparer ).Count();
 				Console.Write( "Done, #: " + cc );
 
-				if ( cc / _populationSize > _cloneThreshold ) {
+				if ( cc / PopulationSize > _cloneThreshold ) {
 					var c = population.GroupBy( spec => spec.GetFitness( env ) );
 
 					Console.Write( "\t\tEliminating... " );
@@ -177,7 +186,7 @@ namespace ProjectScheduling
 							c = c.OrderByDescending( g => g.Key );
 							foreach ( var g in c ) {
 								foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
-									if ( population.Count <= _populationSize )
+									if ( population.Count <= PopulationSize )
 										break;
 									population.Remove( clone );
 								}
@@ -201,7 +210,7 @@ namespace ProjectScheduling
 				Console.Write( "Done" );
 
 				Console.Write( " | Logs... " );
-				UpdateLogs( env, population, generationIndex, minMap, maxMap, avgMap );
+				UpdateLogs( population, generationIndex, minMap, maxMap, avgMap );
 
 				Console.Write( "\t\tMIN: {0:F6}", minMap[generationIndex] );
 				Console.Write( "\t\tAVG: {0:F6}", avgMap[generationIndex] );
@@ -226,15 +235,15 @@ namespace ProjectScheduling
 				minMap.Min( e => e.Value ), maxMap.Max( e => e.Value ) );
 			Console.WriteLine( "All-time best: {0:F6}", allTimeBest.GetFitness( env ) );
 
-			RequestDump();
+			DumpAllData();
 		}
 
-		public void RequestDump()
+		public void DumpAllData()
 		{
 			File.Copy( defFile.FullName, "../../../_solutions/result.def", true );
 			DefIO.WriteDEF( env, allTimeBest, "../../../_solutions/result.sol", _debugOutput );
 			DumpLogs( "../../../_solutions/dump.txt", minMap, maxMap, avgMap );
-			DumpParams( "../../../_solutions/params.txt", env, defFile.Name );
+			DumpParams( "../../../_solutions/params.txt", defFile.Name );
 		}
 
 		public void RequestTerminate()
@@ -309,16 +318,14 @@ namespace ProjectScheduling
 
 		#endregion
 
-		private static Dictionary<ProjectSchedule, double> ComputeFitness(
-			EnvironmentContext env, List<ProjectSchedule> population )
+		private Dictionary<ProjectSchedule, double> ComputeFitness( List<ProjectSchedule> population )
 		{
 			Dictionary<ProjectSchedule, double> fitnessMap = new Dictionary<ProjectSchedule, double>();
 			population.ForEach( e => fitnessMap.Add( e, e.GetFitness( env ) ) );
 			return fitnessMap;
 		}
 
-		private static void UpdateLogs(
-			EnvironmentContext env,
+		private void UpdateLogs(
 			List<ProjectSchedule> population,
 			int generation,
 			Dictionary<int, double> min,
@@ -331,7 +338,7 @@ namespace ProjectScheduling
 				avg.Remove( generation );
 			}
 
-			Dictionary<ProjectSchedule, double> fm = ComputeFitness( env, population );
+			Dictionary<ProjectSchedule, double> fm = ComputeFitness( population );
 			min.Add( generation, fm.Min( pair => pair.Value ) );
 			max.Add( generation, fm.Max( pair => pair.Value ) );
 			avg.Add( generation, fm.Values.Average() );
@@ -343,7 +350,7 @@ namespace ProjectScheduling
 				throw new Exception( "Assertion failed!" );
 		}
 
-		private static void DumpLogs(
+		private void DumpLogs(
 			string path,
 			Dictionary<int, double> min,
 			Dictionary<int, double> max,
@@ -359,13 +366,13 @@ namespace ProjectScheduling
 			File.WriteAllText( path, buf.ToString() );
 		}
 
-		private static void DumpParams( string path, EnvironmentContext env, string defFileName )
+		private void DumpParams( string path, string defFileName )
 		{
 			StringBuilder buf = new StringBuilder();
 
 			buf.AppendFormat( "File: {0}\n", defFileName );
-			buf.AppendFormat( "Population: {0}\n", _populationSize );
-			buf.AppendFormat( "Generations: {0}\n", _generationLimit );
+			buf.AppendFormat( "Population: {0}\n", PopulationSize );
+			buf.AppendFormat( "Generations: {0}\n", GenerationLimit );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Breeder fraction: {0}\n", _breederFraction );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Clone threshold: {0}\n", _cloneThreshold );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Mutation chance: {0}\n", env.ProbabilityMutation );
