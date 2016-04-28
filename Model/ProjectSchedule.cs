@@ -77,19 +77,6 @@ namespace GeneticAlgorithm.Model
 			recomputeFitness = true;
 		}
 
-		public List<int> GetTasksWithPriority( int prio )
-		{
-			List<int> result = new List<int>();
-
-			foreach ( TaskData td in Genotype ) {
-				if ( td.Priority <= prio ) {
-					result.Add( td.TaskId );
-				}
-			}
-
-			return result;
-		}
-
 		public override string ToString()
 		{
 			StringBuilder buf = new StringBuilder();
