@@ -87,7 +87,7 @@ namespace ProjectScheduling.Model
 			return Random.From( _taskResourceMap[taskId] );
 		}
 
-		public int RandomPriority( int curValue = -1, int stdev = 10 )
+		public int RandomPriority( int curValue = -1, int stdev = 5 )
 		{
 			if ( curValue < 0 ) {
 				return Random.Next( 0, Tasks.Count );
@@ -143,6 +143,7 @@ namespace ProjectScheduling.Model
 			completedTasks.Clear();
 
 			int currentTime = 0;
+			double totalCost = 0;
 			double penalty = 0;
 
 			List<TaskData> pendingTasks = specimen.Genotype.OrderBy( td => td.Priority ).ToList();
@@ -163,6 +164,10 @@ namespace ProjectScheduling.Model
 						allBusy = false;
 					}
 					else if ( taskDoneTime <= currentTime ) {
+						Task t = Tasks[resourceTaskMap[rId]];
+						Resource r = Resources[rId];
+						totalCost += t.Duration * r.Cost;
+
 						completedTasks.Add( resourceTaskMap[rId] );
 						busyResourceMap[rId] = -1;
 						resourceTaskMap[rId] = -1;
@@ -211,9 +216,7 @@ namespace ProjectScheduling.Model
 				}
 			}
 
-			double time = currentTime / (double)TimeMax;
-
-			return time + penalty;
+			return currentTime + penalty + totalCost / 1000;
 		}
 	}
 }
