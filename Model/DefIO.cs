@@ -182,11 +182,15 @@ namespace GeneticAlgorithm.Model
 
 			if ( debug ) {
 				buf.Append( "\nDebug\n" ).Append( "===================================\n" );
-				buf.Append( "Time: " ).Append( currentTime ).Append( '\n' );
-				buf.Append( "Cost: " ).Append( totalCost ).Append( '\n' );
+				buf.Append( "\tTime: " ).Append( currentTime ).Append( '\n' );
+				buf.Append( "\tCost: " ).Append( totalCost ).Append( '\n' );
+				buf.Append( "\nPriorities\n" ).Append( "===================================\n" );
+				foreach ( TaskData td in specimen.Genotype ) {
+					buf.AppendFormat( "\t{0} - {1}\n", td.taskId, td.Priority );
+				}
 				buf.Append( "Prerequisites:\n" ).Append( "===================================\n" );
 				foreach ( string s in prereqs ) {
-					buf.Append( s ).Append( "\n" );
+					buf.Append( "\t" ).Append( s ).Append( "\n" );
 				}
 			}
 
