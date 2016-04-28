@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace GeneticAlgorithm.Model
+namespace ProjectScheduling.Model
 {
 	public class Task
 	{

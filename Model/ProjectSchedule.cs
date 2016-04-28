@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace GeneticAlgorithm.Model
+namespace ProjectScheduling.Model
 {
-	public class ProjectSchedule
+	public class ProjectSchedule : IEquatable<ProjectSchedule>
 	{
 		private bool recomputeFitness = true;
 		private double cachedFitness;
@@ -93,6 +93,34 @@ namespace GeneticAlgorithm.Model
 			buf.Append( " }" );
 
 			return buf.ToString();
+		}
+
+		public bool Equals( ProjectSchedule other )
+		{
+			bool result = true;
+
+			for ( int i = 0; i < Genotype.Count && result; ++i ) {
+				result &= Genotype[i].Equals( other.Genotype[i] );
+			}
+
+			return result;
+		}
+
+		public override bool Equals( object obj )
+		{
+			if ( obj is ProjectSchedule )
+				return Equals( (ProjectSchedule)obj );
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			int hash = 19;
+			foreach ( TaskData td in Genotype ) {
+				hash = hash * 31 + td.GetHashCode();
+			}
+			//return hash;
+			return 0;
 		}
 	}
 }

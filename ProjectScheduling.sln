@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectScheduling", "ProjectScheduling.csproj", "{FD256889-4FEB-4C73-8593-AEAB32E9F6C3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectSchedulingGUI", "..\ProjectSchedulingGUI\ProjectSchedulingGUI.csproj", "{00E20EDE-CE4A-4C84-887B-9F248E9011CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,11 +17,12 @@ Global
 		{FD256889-4FEB-4C73-8593-AEAB32E9F6C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FD256889-4FEB-4C73-8593-AEAB32E9F6C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD256889-4FEB-4C73-8593-AEAB32E9F6C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00E20EDE-CE4A-4C84-887B-9F248E9011CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00E20EDE-CE4A-4C84-887B-9F248E9011CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00E20EDE-CE4A-4C84-887B-9F248E9011CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00E20EDE-CE4A-4C84-887B-9F248E9011CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

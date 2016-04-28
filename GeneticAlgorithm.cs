@@ -1,4 +1,4 @@
-﻿using GeneticAlgorithm.Model;
+﻿using ProjectScheduling.Model;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -7,9 +7,9 @@ using System.Linq;
 using System.Text;
 
 
-namespace GeneticAlgorithm
+namespace ProjectScheduling
 {
-	public static class GeneticAlgorithm
+	public class GeneticAlgorithm
 	{
 		// Initial parameters
 		private const int _populationSize = 20;
@@ -18,6 +18,7 @@ namespace GeneticAlgorithm
 		private const double _mutationChance = 0.03;
 		private const double _crossoverChance = 0.4;
 
+		private const bool _debugOutput = true;
 		private const bool _algorithmicPrerequisites = true;
 		private const ECloneEliminationStrategy _cloneStrat = ECloneEliminationStrategy.ELIMINATION;
 
@@ -25,13 +26,27 @@ namespace GeneticAlgorithm
 		private const int _generationLimit = 50;
 		private const double _fitnessThreshold = 0.1;
 
+		private EnvironmentContext env;
+		private FileInfo defFile;
+		private ProjectSchedule allTimeBest;
+		private Dictionary<int, double> minMap;
+		private Dictionary<int, double> avgMap;
+		private Dictionary<int, double> maxMap;
+
+		private volatile bool terminate = false;
+
 		public static void Main()
+		{
+			GeneticAlgorithm ga = new GeneticAlgorithm();
+			ga.Start();
+		}
+
+		public void Start()
 		{
 			Console.WriteLine( "Setting up environment..." );
 			// Setup the environment for the genetic algorithm
-			EnvironmentContext env = new EnvironmentContext();
+			env = new EnvironmentContext();
 
-			bool debugOutput = true;
 			ECloneEliminationStrategy cloneStrat = _cloneStrat;
 
 			//env.TimeWeight = 0.7;
@@ -55,9 +70,9 @@ namespace GeneticAlgorithm
 				fileId = int.Parse( input );
 			}
 
-			FileInfo fi = new FileInfo( files[fileId] );
-			Console.WriteLine( "Using " + fi.Name );
-			DefIO.ReadDEF( env, fi.FullName );
+			defFile = new FileInfo( files[fileId] );
+			Console.WriteLine( "Using " + defFile.Name );
+			DefIO.ReadDEF( env, defFile.FullName );
 
 			// Assertions
 			if ( env.Resources.Count > 0 )
@@ -97,9 +112,9 @@ namespace GeneticAlgorithm
 			}
 
 			FitnessComparer comparer = new FitnessComparer( env );
-			Dictionary<int, double> minMap = new Dictionary<int, double>();
-			Dictionary<int, double> maxMap = new Dictionary<int, double>();
-			Dictionary<int, double> avgMap = new Dictionary<int, double>();
+			minMap = new Dictionary<int, double>();
+			maxMap = new Dictionary<int, double>();
+			avgMap = new Dictionary<int, double>();
 
 			Console.Write( "Generating initial population..." );
 			List<ProjectSchedule> population = env.GeneratePopulation( _populationSize );
@@ -107,7 +122,7 @@ namespace GeneticAlgorithm
 
 			UpdateLogs( env, population, 0, minMap, maxMap, avgMap );
 
-			ProjectSchedule allTimeBest = null;
+			allTimeBest = null;
 			double startMin = minMap.Min( e => e.Value );
 			double startMax = maxMap.Max( e => e.Value );
 
@@ -118,7 +133,8 @@ namespace GeneticAlgorithm
 			int generationIndex = 0;
 			int timeStart = Environment.TickCount;
 
-			while ( minMap[generationIndex] > _fitnessThreshold && generationIndex < _generationLimit ) {
+			while ( !terminate && minMap[generationIndex] > _fitnessThreshold && generationIndex < _generationLimit ) {
+
 				int genTimeStart = Environment.TickCount;
 
 				++generationIndex;
@@ -210,10 +226,20 @@ namespace GeneticAlgorithm
 				minMap.Min( e => e.Value ), maxMap.Max( e => e.Value ) );
 			Console.WriteLine( "All-time best: {0:F6}", allTimeBest.GetFitness( env ) );
 
-			File.Copy( fi.FullName, "../../../_solutions/result.def", true );
-			DefIO.WriteDEF( env, allTimeBest, "../../../_solutions/result.sol", debugOutput );
+			RequestDump();
+		}
+
+		public void RequestDump()
+		{
+			File.Copy( defFile.FullName, "../../../_solutions/result.def", true );
+			DefIO.WriteDEF( env, allTimeBest, "../../../_solutions/result.sol", _debugOutput );
 			DumpLogs( "../../../_solutions/dump.txt", minMap, maxMap, avgMap );
-			DumpParams( "../../../_solutions/params.txt", env, fi.Name );
+			DumpParams( "../../../_solutions/params.txt", env, defFile.Name );
+		}
+
+		public void RequestTerminate()
+		{
+			terminate = true;
 		}
 
 		// ==================================================================================================

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace GeneticAlgorithm.Model
+namespace ProjectScheduling.Model
 {
 	public static class DefIO
 	{

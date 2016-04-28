@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GeneticAlgorithm.Model
+namespace ProjectScheduling.Model
 {
 	public class EnvironmentContext
 	{

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GeneticAlgorithm
+namespace ProjectScheduling
 {
 	public static class Extensions
 	{

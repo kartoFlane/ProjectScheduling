@@ -1,7 +1,8 @@
-﻿
-namespace GeneticAlgorithm.Model
+﻿using System;
+
+namespace ProjectScheduling.Model
 {
-	public class TaskData
+	public class TaskData : IEquatable<TaskData>
 	{
 		public readonly int taskId;
 
@@ -55,6 +56,31 @@ namespace GeneticAlgorithm.Model
 		public override string ToString()
 		{
 			return string.Format( "( id: {0}, resId: {1}, p: {2} )", taskId, ResourceId, Priority );
+		}
+
+		public bool Equals( TaskData other )
+		{
+			return taskId == other.taskId &&
+				ResourceId == other.ResourceId &&
+				Priority == other.Priority;
+		}
+
+		public override bool Equals( object obj )
+		{
+			if ( obj is TaskData )
+				return Equals( (TaskData)obj );
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			int hash = 19;
+
+			hash = hash * 31 + taskId.GetHashCode();
+			hash = hash * 31 + ResourceId.GetHashCode();
+			hash = hash * 31 + Priority.GetHashCode();
+
+			return hash;
 		}
 	}
 }
