@@ -89,9 +89,8 @@ namespace ProjectScheduling.Model
 
 		public int RandomPriority( int curValue = -1, int stdev = 5 )
 		{
-			if ( curValue < 0 ) {
-				return Random.Next( 0, Tasks.Count );
-			}
+			return Random.Next( 0, Tasks.Count );
+			/*
 			else {
 				double d = Random.NextGaussian( curValue, stdev );
 
@@ -103,9 +102,9 @@ namespace ProjectScheduling.Model
 				if ( d == 0 )
 					d = Random.NextBool() ? 1 : -1;
 
-				// Don't clamp the priority, let it run wild.
-				return (int)Math.Max( 0, Math.Round( d ) );
+				return (int)Math.Max( 0, Math.Max( Tasks.Count, Math.Round( d ) ) );
 			}
+			*/
 		}
 
 		private int Clamp( int v, int min, int max )
@@ -216,7 +215,7 @@ namespace ProjectScheduling.Model
 				}
 			}
 
-			return currentTime + penalty + totalCost / 1000;
+			return currentTime + penalty + totalCost / 100000;
 		}
 	}
 }

@@ -12,19 +12,19 @@ namespace ProjectScheduling
 	public class GeneticAlgorithm
 	{
 		// Initial parameters
-		private const int _populationSize = 20;
+		private const int _populationSize = 40;
 		private const double _breederFraction = 1;
-		private const double _cloneThreshold = 0.05;
-		private const double _mutationChance = 0.03;
-		private const double _crossoverChance = 0.4;
+		private const double _cloneThreshold = 0.15;
+		private const double _mutationChance = 0.04;
+		private const double _crossoverChance = 0.33;
 
 		private const bool _debugOutput = true;
 		private const bool _algorithmicPrerequisites = true;
-		private const ECloneEliminationStrategy _cloneStrat = ECloneEliminationStrategy.ELIMINATION;
+		private const ECloneEliminationStrategy _cloneStrat = ECloneEliminationStrategy.MUTATION;
 
 		// Stop conditions
-		private const int _generationLimit = 50;
-		private const double _fitnessThreshold = 0.1;
+		private const int _generationLimit = 100;
+		private const double _fitnessThreshold = 0;
 
 		private EnvironmentContext env;
 		private FileInfo defFile;
@@ -33,10 +33,10 @@ namespace ProjectScheduling
 		private Dictionary<int, double> avgMap;
 		private Dictionary<int, double> maxMap;
 
-		private volatile bool terminate = false;
-
 		public int GenerationLimit { get; set; }
 		public int PopulationSize { get; set; }
+
+		public bool RequestTerminate { get; set; }
 
 		public static void Main()
 		{
@@ -73,7 +73,10 @@ namespace ProjectScheduling
 			}
 			Console.WriteLine();
 
-			int fileId = 2;
+			// 8 - for testing
+			// 2 - for research
+			// 1 - difficult def
+			int fileId = 1;
 
 			if ( fileId == -1 ) {
 				string input = Console.ReadLine();
@@ -143,7 +146,7 @@ namespace ProjectScheduling
 			int generationIndex = 0;
 			int timeStart = Environment.TickCount;
 
-			while ( !terminate && minMap[generationIndex] > _fitnessThreshold && generationIndex < GenerationLimit ) {
+			while ( !RequestTerminate && minMap[generationIndex] > _fitnessThreshold && generationIndex < GenerationLimit ) {
 				int genTimeStart = Environment.TickCount;
 
 				++generationIndex;
@@ -176,8 +179,8 @@ namespace ProjectScheduling
 					switch ( cloneStrat ) {
 						case ECloneEliminationStrategy.MUTATION: {
 							foreach ( var g in c ) {
-								foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
-									clone.Mutate( env, 5 * env.ProbabilityMutation );
+								foreach ( ProjectSchedule clone in g.Skip( 3 ) ) {
+									clone.Mutate( env, 10 * env.ProbabilityMutation, true );
 								}
 							}
 						} break;
@@ -185,11 +188,13 @@ namespace ProjectScheduling
 						case ECloneEliminationStrategy.ELIMINATION: {
 							c = c.OrderByDescending( g => g.Key );
 							foreach ( var g in c ) {
-								foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
-									if ( population.Count <= PopulationSize )
-										break;
+								foreach ( ProjectSchedule clone in g.Skip( 3 ) ) {
 									population.Remove( clone );
 								}
+							}
+
+							while ( population.Count < PopulationSize ) {
+								population.Add( new ProjectSchedule( env ) );
 							}
 						} break;
 
@@ -244,11 +249,6 @@ namespace ProjectScheduling
 			DefIO.WriteDEF( env, allTimeBest, "../../../_solutions/result.sol", _debugOutput );
 			DumpLogs( "../../../_solutions/dump.txt", minMap, maxMap, avgMap );
 			DumpParams( "../../../_solutions/params.txt", defFile.Name );
-		}
-
-		public void RequestTerminate()
-		{
-			terminate = true;
 		}
 
 		// ==================================================================================================

@@ -29,7 +29,7 @@ namespace ProjectScheduling.Model
 			return new TaskData( this );
 		}
 
-		public bool Mutate( EnvironmentContext env, double overrideMutationChance )
+		public bool Mutate( EnvironmentContext env, double overrideMutationChance, bool isClone )
 		{
 			bool changed = false;
 
@@ -41,7 +41,8 @@ namespace ProjectScheduling.Model
 
 			if ( env.Random.NextDouble() < overrideMutationChance ) {
 				int old = Priority;
-				Priority = env.RandomPriority( Priority );
+				int stdev = isClone ? env.Tasks.Count : 5;
+				Priority = env.RandomPriority( Priority, stdev );
 				changed |= old != Priority;
 			}
 

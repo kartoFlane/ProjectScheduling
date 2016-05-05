@@ -40,14 +40,14 @@ namespace ProjectScheduling.Model
 			return cachedFitness;
 		}
 
-		public void Mutate( EnvironmentContext env, double overrideMutationChance = -1 )
+		public void Mutate( EnvironmentContext env, double overrideMutationChance = -1, bool isClone = false )
 		{
 			if ( overrideMutationChance < 0 )
 				overrideMutationChance = env.ProbabilityMutation;
 
 			Genotype.ForEach( gene =>
 			{
-				recomputeFitness |= gene.Mutate( env, overrideMutationChance );
+				recomputeFitness |= gene.Mutate( env, overrideMutationChance, isClone );
 			} );
 		}
 
