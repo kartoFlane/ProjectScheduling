@@ -25,6 +25,8 @@ namespace ProjectScheduling.Model
 		/// </summary>
 		public bool AlgorithmicPrerequisites { get; set; }
 		public double PenaltyPrerequisite { get; set; }
+		public double PenaltyIdleResource { get; set; }
+		public double PenaltyWaitingTask { get; set; }
 
 		#endregion
 
@@ -194,6 +196,8 @@ namespace ProjectScheduling.Model
 
 					if ( busyResourceMap[td.ResourceId] >= 0 ) {
 						// Resource is busy, we can't complete this task at this point in time.
+						// Apply penalty.
+						penalty += PenaltyWaitingTask;
 						continue;
 					}
 
@@ -207,6 +211,13 @@ namespace ProjectScheduling.Model
 							if ( !completedTasks.Contains( reqId ) ) {
 								penalty += PenaltyPrerequisite;
 							}
+						}
+					}
+
+					// Apply penalty for each idle resource at each time step.
+					foreach ( int rId in Resources.Keys ) {
+						if ( busyResourceMap[rId] == -1 ) {
+							penalty += PenaltyIdleResource;
 						}
 					}
 

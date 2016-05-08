@@ -119,8 +119,8 @@ namespace ProjectScheduling.Model
 			foreach ( TaskData td in Genotype ) {
 				hash = hash * 31 + td.GetHashCode();
 			}
-			//return hash;
-			return 0;
+
+			return hash;
 		}
 	}
 }

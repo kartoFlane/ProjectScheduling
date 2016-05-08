@@ -11,12 +11,14 @@ namespace ProjectScheduling
 {
 	public class GeneticAlgorithm
 	{
+		public event Action OnAllTimeBestChanged;
+
 		// Initial parameters
-		private const int _populationSize = 40;
+		private const int _populationSize = 30;
 		private const double _breederFraction = 1;
 		private const double _cloneThreshold = 0.15;
 		private const double _mutationChance = 0.04;
-		private const double _crossoverChance = 0.33;
+		private const double _crossoverChance = 0.66;
 
 		private const bool _debugOutput = true;
 		private const bool _algorithmicPrerequisites = true;
@@ -35,6 +37,8 @@ namespace ProjectScheduling
 
 		public int GenerationLimit { get; set; }
 		public int PopulationSize { get; set; }
+
+		public double AllTimeBestFitness { get { return allTimeBest == null ? 0 : allTimeBest.GetFitness( env ); } }
 
 		public bool RequestTerminate { get; set; }
 
@@ -65,6 +69,8 @@ namespace ProjectScheduling
 
 			env.AlgorithmicPrerequisites = _algorithmicPrerequisites;
 			env.PenaltyPrerequisite = 0.3;
+			env.PenaltyIdleResource = 0.005;
+			env.PenaltyWaitingTask = 0.011;
 
 			string[] files = Directory.GetFiles( "../../../_defs/", "*.def" );
 			Console.WriteLine( string.Format( "Found {0} .def files: ", files.Length ) );
@@ -73,10 +79,9 @@ namespace ProjectScheduling
 			}
 			Console.WriteLine();
 
-			// 8 - for testing
-			// 2 - for research
+			// Research: 0, 1, 2, 9, 10
 			// 1 - difficult def
-			int fileId = 1;
+			int fileId = 0;
 
 			if ( fileId == -1 ) {
 				string input = Console.ReadLine();
@@ -159,7 +164,7 @@ namespace ProjectScheduling
 				//CrossOver_FalloffNormal( env, population, q );
 				//CrossOver_FalloffLinear( env, population, q );
 				//CrossOver_SimplePairs( env, population, q );
-				CrossOver_EqualOpportunity( env, population, q );
+				CrossOver_EqualOpportunity( env, population, q, true );
 				Console.Write( "Done, delta: {0,3}", population.Count - PopulationSize );
 
 				Console.Write( " | Mut... " );
@@ -222,11 +227,24 @@ namespace ProjectScheduling
 				Console.Write( "\t\tMAX: {0:F6}", maxMap[generationIndex] );
 
 				// Find all-time best
+				bool changed = false;
 				foreach ( ProjectSchedule specimen in population ) {
 					if ( allTimeBest == null ||
 							specimen.GetFitness( env ) < allTimeBest.GetFitness( env ) ) {
-						allTimeBest = specimen.DeepCopy();
+						allTimeBest = specimen;
+						changed = true;
 					}
+				}
+
+				if ( changed ) {
+					allTimeBest = allTimeBest.DeepCopy();
+					if ( OnAllTimeBestChanged != null ) {
+						OnAllTimeBestChanged();
+					}
+				}
+
+				if ( population.Contains( allTimeBest, comparer ) ) {
+					population.Add( allTimeBest.DeepCopy() );
 				}
 
 				Console.WriteLine( "\t\tTime/Gen: {0}s", ( Environment.TickCount - genTimeStart ) / 1000.0 );
@@ -268,10 +286,12 @@ namespace ProjectScheduling
 		private static void CrossOver_EqualOpportunity(
 			EnvironmentContext env,
 			List<ProjectSchedule> population,
-			List<ProjectSchedule> breeders )
+			List<ProjectSchedule> breeders,
+			bool doubleCross )
 		{
 			for ( int i = 0; i < breeders.Count; ++i ) {
-				for ( int j = 0; j < breeders.Count; ++j ) {
+				int j = doubleCross ? 0 : i + 1;
+				for ( ; j < breeders.Count; ++j ) {
 					if ( i == j )
 						continue;
 
