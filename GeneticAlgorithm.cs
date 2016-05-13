@@ -174,17 +174,17 @@ namespace ProjectScheduling
 
 				// Count clones
 				Console.Write( "\t\tClones... " );
-				double cc = population.Count - population.Distinct( comparer ).Count();
+				double cc = population.Count - population.Distinct().Count();
 				Console.Write( "Done, #: " + cc );
 
 				if ( cc / PopulationSize > _cloneThreshold ) {
-					var c = population.GroupBy( spec => spec.GetFitness( env ) );
+					var c = population.GroupBy( spec => spec );
 
 					Console.Write( "\t\tEliminating... " );
 					switch ( cloneStrat ) {
 						case ECloneEliminationStrategy.MUTATION: {
 							foreach ( var g in c ) {
-								foreach ( ProjectSchedule clone in g.Skip( 3 ) ) {
+								foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
 									clone.Mutate( env, 10 * env.ProbabilityMutation, true );
 								}
 							}
@@ -193,7 +193,7 @@ namespace ProjectScheduling
 						case ECloneEliminationStrategy.ELIMINATION: {
 							c = c.OrderByDescending( g => g.Key );
 							foreach ( var g in c ) {
-								foreach ( ProjectSchedule clone in g.Skip( 3 ) ) {
+								foreach ( ProjectSchedule clone in g.Skip( 1 ) ) {
 									population.Remove( clone );
 								}
 							}
@@ -243,7 +243,7 @@ namespace ProjectScheduling
 					}
 				}
 
-				if ( population.Contains( allTimeBest, comparer ) ) {
+				if ( !population.Contains( allTimeBest ) ) {
 					population.Add( allTimeBest.DeepCopy() );
 				}
 
@@ -338,11 +338,13 @@ namespace ProjectScheduling
 
 		#endregion
 
-		private Dictionary<ProjectSchedule, double> ComputeFitness( List<ProjectSchedule> population )
+		private List<double> ComputeFitness( List<ProjectSchedule> population )
 		{
-			Dictionary<ProjectSchedule, double> fitnessMap = new Dictionary<ProjectSchedule, double>();
-			population.ForEach( e => fitnessMap.Add( e, e.GetFitness( env ) ) );
-			return fitnessMap;
+			List<double> result = new List<double>();
+			foreach ( ProjectSchedule specimen in population ) {
+				result.Add( specimen.GetFitness( env ) );
+			}
+			return result;
 		}
 
 		private void UpdateLogs(
@@ -358,10 +360,10 @@ namespace ProjectScheduling
 				avg.Remove( generation );
 			}
 
-			Dictionary<ProjectSchedule, double> fm = ComputeFitness( population );
-			min.Add( generation, fm.Min( pair => pair.Value ) );
-			max.Add( generation, fm.Max( pair => pair.Value ) );
-			avg.Add( generation, fm.Values.Average() );
+			List<double> fitList = ComputeFitness( population );
+			min.Add( generation, fitList.Min() );
+			max.Add( generation, fitList.Max() );
+			avg.Add( generation, fitList.Average() );
 		}
 
 		private static void Assert( bool condition )

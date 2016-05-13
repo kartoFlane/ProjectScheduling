@@ -9,26 +9,35 @@ namespace ProjectScheduling.Model
 		private bool recomputeFitness = true;
 		private double cachedFitness;
 
-		public List<TaskData> Genotype { get; private set; }
+		public List<int> Genotype { get; private set; }
 
 		private ProjectSchedule()
 		{
-			Genotype = new List<TaskData>();
+			Genotype = new List<int>();
+		}
+
+		private ProjectSchedule( ProjectSchedule source )
+		{
+			Genotype = new List<int>( source.Genotype.Count );
+			foreach ( int gene in source.Genotype )
+				Genotype.Add( gene );
 		}
 
 		public ProjectSchedule( EnvironmentContext env )
 			: this()
 		{
+			Genotype.Capacity = env.Tasks.Count * 2;
 			for ( int i = 0; i < env.Tasks.Count; ++i ) {
-				Genotype.Add( new TaskData( i, env.RandomResourceId( i ), env.RandomPriority() ) );
+				Genotype.Add( env.RandomResourceId( i ) );
+			}
+			for ( int i = 0; i < env.Tasks.Count; ++i ) {
+				Genotype.Add( env.RandomPriority() );
 			}
 		}
 
 		public ProjectSchedule DeepCopy()
 		{
-			ProjectSchedule result = new ProjectSchedule();
-			Genotype.ForEach( e => result.Genotype.Add( e.Copy() ) );
-			return result;
+			return new ProjectSchedule( this );
 		}
 
 		public double GetFitness( EnvironmentContext env )
@@ -45,10 +54,23 @@ namespace ProjectScheduling.Model
 			if ( overrideMutationChance < 0 )
 				overrideMutationChance = env.ProbabilityMutation;
 
-			Genotype.ForEach( gene =>
-			{
-				recomputeFitness |= gene.Mutate( env, overrideMutationChance, isClone );
-			} );
+			for ( int i = 0; i < env.Tasks.Count; ++i ) {
+				if ( env.Random.NextDouble() < overrideMutationChance ) {
+					int old = Genotype[i];
+					Genotype[i] = env.RandomResourceId( i );
+					recomputeFitness |= old != Genotype[i];
+				}
+			}
+
+			int offset = env.Tasks.Count;
+			for ( int i = 0; i < env.Tasks.Count; ++i ) {
+				if ( env.Random.NextDouble() < overrideMutationChance ) {
+					int j = i + offset;
+					int old = Genotype[j];
+					Genotype[j] = env.RandomPriority();
+					recomputeFitness |= old != Genotype[j];
+				}
+			}
 		}
 
 		public ProjectSchedule[] CrossOver( EnvironmentContext env, ProjectSchedule fiancee )
@@ -70,9 +92,9 @@ namespace ProjectScheduling.Model
 		{
 			for ( int i = 0; i < parentA.Genotype.Count; ++i ) {
 				if ( i <= start )
-					Genotype.Add( parentA.Genotype[i].Copy() );
+					Genotype.Add( parentA.Genotype[i] );
 				else
-					Genotype.Add( parentB.Genotype[i].Copy() );
+					Genotype.Add( parentB.Genotype[i] );
 			}
 			recomputeFitness = true;
 		}
@@ -116,8 +138,9 @@ namespace ProjectScheduling.Model
 		public override int GetHashCode()
 		{
 			int hash = 19;
-			foreach ( TaskData td in Genotype ) {
-				hash = hash * 31 + td.GetHashCode();
+
+			for ( int i = 0; i < Genotype.Count; ++i ) {
+				hash = hash * 31 + Genotype[i].GetHashCode();
 			}
 
 			return hash;

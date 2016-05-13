@@ -49,11 +49,6 @@ namespace ProjectScheduling.Model
 			return changed;
 		}
 
-		public Resource GetResource( EnvironmentContext env )
-		{
-			return env.Resources[ResourceId];
-		}
-
 		public override string ToString()
 		{
 			return string.Format( "( id: {0}, resId: {1}, p: {2} )", taskId, ResourceId, Priority );

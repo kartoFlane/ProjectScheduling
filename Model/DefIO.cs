@@ -107,7 +107,13 @@ namespace ProjectScheduling.Model
 			HashSet<int> completedTasks = new HashSet<int>();
 
 			List<string> prereqs = new List<string>();
-			List<TaskData> pendingTasks = specimen.Genotype.OrderBy( td => td.Priority ).ToList();
+
+			int offset = env.Tasks.Count;
+			List<TaskData> pendingTasks = new List<TaskData>( offset );
+			for ( int i = 0; i < offset; ++i ) {
+				pendingTasks.Add( new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] ) );
+			}
+			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToList();
 
 			int currentTime = 0;
 			double totalCost = 0;
@@ -185,8 +191,8 @@ namespace ProjectScheduling.Model
 				buf.Append( "\tTime: " ).Append( currentTime ).Append( '\n' );
 				buf.Append( "\tCost: " ).Append( totalCost ).Append( '\n' );
 				buf.Append( "\nPriorities\n" ).Append( "===================================\n" );
-				foreach ( TaskData td in specimen.Genotype ) {
-					buf.AppendFormat( "\t{0} - {1}\n", td.taskId, td.Priority );
+				for ( int i = 0; i < offset; ++i ) {
+					buf.AppendFormat( "\t{0} - {1}\n", i, specimen.Genotype[i + offset] );
 				}
 				buf.Append( "Prerequisites:\n" ).Append( "===================================\n" );
 				foreach ( string s in prereqs ) {

@@ -147,7 +147,12 @@ namespace ProjectScheduling.Model
 			double totalCost = 0;
 			double penalty = 0;
 
-			List<TaskData> pendingTasks = specimen.Genotype.OrderBy( td => td.Priority ).ToList();
+			int offset = Tasks.Count;
+			List<TaskData> pendingTasks = new List<TaskData>( offset );
+			for ( int i = 0; i < offset; ++i ) {
+				pendingTasks.Add( new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] ) );
+			}
+			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToList();
 
 			// TODO: Optionally sort by time to complete, cost, or pick randomly here,
 			// for tasks with the same priority.
