@@ -23,20 +23,14 @@ namespace ProjectScheduling.Model
 		/// that prevents erroneous assignments. If false, missing a precedence
 		/// relation will result in penalty being applied instead.
 		/// </summary>
-		public bool AlgorithmicPrerequisites { get; set; }
-		public double PenaltyPrerequisite { get; set; }
+		public bool AlgorithmicRelations { get; set; }
+		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
 		public double PenaltyWaitingTask { get; set; }
 
 		#endregion
 
 		#region Environment Properties
-
-		public double TimeWeight { get; set; }
-		public int Cheapest { get; set; }
-		public double MinCost { get; set; }
-		public double MaxCost { get; set; }
-		public int TimeMax { get; set; }
 
 		public Dictionary<int, Resource> Resources { get; private set; }
 		public Dictionary<int, Task> Tasks { get; private set; }
@@ -195,7 +189,7 @@ namespace ProjectScheduling.Model
 					Resource r = Resources[td.ResourceId];
 					Task t = Tasks[td.taskId];
 
-					if ( AlgorithmicPrerequisites && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
+					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
 						continue;
 					}
 
@@ -210,11 +204,11 @@ namespace ProjectScheduling.Model
 					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
 					resourceTaskMap[td.ResourceId] = td.taskId;
 
-					if ( !AlgorithmicPrerequisites ) {
+					if ( !AlgorithmicRelations ) {
 						// Apply penalty for missing predecessor tasks
 						foreach ( int reqId in t.Predecessors ) {
 							if ( !completedTasks.Contains( reqId ) ) {
-								penalty += PenaltyPrerequisite;
+								penalty += PenaltyRelations;
 							}
 						}
 					}

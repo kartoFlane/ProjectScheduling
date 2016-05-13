@@ -145,7 +145,7 @@ namespace ProjectScheduling.Model
 					Resource r = env.Resources[td.ResourceId];
 					Task t = env.Tasks[td.taskId];
 
-					if ( env.AlgorithmicPrerequisites && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
+					if ( env.AlgorithmicRelations && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
 						continue;
 					}
 
@@ -158,7 +158,7 @@ namespace ProjectScheduling.Model
 					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
 					resourceTaskMap[td.ResourceId] = td.taskId;
 
-					if ( !env.AlgorithmicPrerequisites ) {
+					if ( !env.AlgorithmicRelations ) {
 						foreach ( int reqId in t.Predecessors ) {
 							if ( !completedTasks.Contains( reqId ) ) {
 								string s = "";
