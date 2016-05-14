@@ -88,6 +88,28 @@ namespace ProjectScheduling
 			PenaltyWaitingTask = 0.001; // 0.011
 		}
 
+		public GeneticAlgorithm( Parameters parameters )
+		{
+			GenerationLimit = parameters.GenerationLimit;
+			PopulationSize = parameters.PopulationSize;
+			BreederFraction = parameters.BreederFraction;
+			CloneThreshold = parameters.CloneThreshold;
+			MutationChance = parameters.MutationChance;
+			CrossoverChance = parameters.CrossoverChance;
+			CloneElimination = parameters.CloneElimination;
+			CrossoverStrategy = parameters.CrossoverStrategy;
+
+			DebugOutput = parameters.DebugOutput;
+			AlgorithmicRelations = parameters.AlgorithmicRelations;
+
+			InputDef = parameters.InputDef;
+			OutputDir = parameters.OutputDir;
+
+			PenaltyRelations = parameters.PenaltyRelations;
+			PenaltyIdleResource = parameters.PenaltyIdleResource;
+			PenaltyWaitingTask = parameters.PenaltyWaitingTask;
+		}
+
 		public void Start()
 		{
 			Console.WriteLine( "Setting up environment..." );
@@ -107,7 +129,12 @@ namespace ProjectScheduling
 			if ( !defFile.Exists )
 				throw new ArgumentException( "File doesn't exist: " + InputDef );
 
-			outputDir = new DirectoryInfo( OutputDir );
+			if ( Directory.Exists( OutputDir ) ) {
+				outputDir = new DirectoryInfo( OutputDir );
+			}
+			else {
+				outputDir = Directory.CreateDirectory( OutputDir );
+			}
 
 			Console.WriteLine( "Using " + defFile.Name );
 			DefIO.ReadDEF( env, defFile.FullName );
@@ -267,10 +294,10 @@ namespace ProjectScheduling
 
 		public void DumpAllData()
 		{
-			File.Copy( defFile.FullName, outputDir + "/result.def", true );
-			DefIO.WriteDEF( env, allTimeBest, outputDir + "/result.sol", DebugOutput );
-			DumpLogs( outputDir + "/dump.txt", minMap, maxMap, avgMap );
-			DumpParams( outputDir + "/params.txt", defFile.Name );
+			File.Copy( defFile.FullName, outputDir + "result.def", true );
+			DefIO.WriteDEF( env, allTimeBest, outputDir + "result.sol", DebugOutput );
+			DumpLogs( outputDir + "dump.txt", minMap, maxMap, avgMap );
+			DumpParams( outputDir + "params.txt", defFile.Name );
 		}
 
 		// ==================================================================================================
@@ -407,6 +434,54 @@ namespace ProjectScheduling
 			buf.AppendFormat( "Clone elim. strategy: {0}\n", CloneElimination.ToString() );
 
 			File.WriteAllText( path, buf.ToString() );
+		}
+
+		public class Parameters
+		{
+			public int GenerationLimit { get; set; }
+			public int PopulationSize { get; set; }
+			public double BreederFraction { get; set; }
+			public double CloneThreshold { get; set; }
+			public double MutationChance { get; set; }
+			public double CrossoverChance { get; set; }
+			public ECloneEliminationStrategy CloneElimination { get; set; }
+			public ECrossoverStrategy CrossoverStrategy { get; set; }
+
+			public double PenaltyRelations { get; set; }
+			public double PenaltyIdleResource { get; set; }
+			public double PenaltyWaitingTask { get; set; }
+
+			public string InputDef { get; set; }
+			public string OutputDir { get; set; }
+
+			public bool DebugOutput { get; set; }
+			public bool AlgorithmicRelations { get; set; }
+
+			public Parameters()
+			{
+			}
+
+			public Parameters( Parameters other )
+			{
+				GenerationLimit = other.GenerationLimit;
+				PopulationSize = other.PopulationSize;
+				BreederFraction = other.BreederFraction;
+				CloneThreshold = other.CloneThreshold;
+				MutationChance = other.MutationChance;
+				CrossoverChance = other.CrossoverChance;
+				CloneElimination = other.CloneElimination;
+				CrossoverStrategy = other.CrossoverStrategy;
+
+				DebugOutput = other.DebugOutput;
+				AlgorithmicRelations = other.AlgorithmicRelations;
+
+				InputDef = other.InputDef;
+				OutputDir = other.OutputDir;
+
+				PenaltyRelations = other.PenaltyRelations;
+				PenaltyIdleResource = other.PenaltyIdleResource;
+				PenaltyWaitingTask = other.PenaltyWaitingTask;
+			}
 		}
 	}
 
