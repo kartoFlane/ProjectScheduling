@@ -6,7 +6,7 @@ namespace ProjectScheduling.Model
 {
 	public class EnvironmentContext
 	{
-		private static Dictionary<int, List<int>> _taskResourceMap;
+		private static List<int>[] _taskResources;
 
 		#region Probabilities
 
@@ -31,8 +31,11 @@ namespace ProjectScheduling.Model
 
 		#region Environment Properties
 
-		public Dictionary<int, Resource> Resources { get; private set; }
-		public Dictionary<int, Task> Tasks { get; private set; }
+		public Resource[] Resources { get; private set; }
+		public Task[] Tasks { get; private set; }
+
+		private double penaltyIdlePerResource;
+		private double penaltyWaitPerTask;
 
 		#endregion
 
@@ -41,19 +44,22 @@ namespace ProjectScheduling.Model
 
 		public EnvironmentContext()
 		{
-			Resources = new Dictionary<int, Resource>();
-			Tasks = new Dictionary<int, Task>();
 			Random = new Random();
-
-			_taskResourceMap = new Dictionary<int, List<int>>();
 		}
 
-		public void ComputeTaskResourceCache()
+		public void Load( List<Resource> res, List<Task> task )
 		{
-			foreach ( int taskId in Tasks.Keys ) {
-				Task t = Tasks[taskId];
+			Resources = res.ToArray();
+			Tasks = task.ToArray();
+		}
 
-				var resSet = Resources.Values.ToList().FindAll( r =>
+		public void ComputeCache()
+		{
+			_taskResources = new List<int>[Tasks.Length];
+
+			foreach ( Task t in Tasks ) {
+
+				var resSet = Resources.ToList().FindAll( r =>
 				{
 					bool result = true;
 					foreach ( KeyValuePair<int, int> p in t.SkillRequirements ) {
@@ -66,23 +72,26 @@ namespace ProjectScheduling.Model
 				} ).Select( r => r.Id ).ToList();
 
 				if ( resSet.Count == 0 ) {
-					throw new Exception( "DEF error: no resources can do task #" + taskId + "!" );
+					throw new Exception( "DEF error: no resources can do task #" + t.Id + "!" );
 				}
 
-				_taskResourceMap[taskId] = resSet;
+				_taskResources[t.Id] = resSet;
 			}
+
+			penaltyIdlePerResource = PenaltyIdleResource / Resources.Length;
+			penaltyWaitPerTask = PenaltyWaitingTask / Tasks.Length;
 		}
 
 		#region Population Generation / Mutation
 
 		public int RandomResourceId( int taskId )
 		{
-			return Random.From( _taskResourceMap[taskId] );
+			return Random.From( _taskResources[taskId] );
 		}
 
 		public int RandomPriority( int curValue = -1, int stdev = 5 )
 		{
-			return Random.Next( 0, Tasks.Count );
+			return Random.Next( 0, Tasks.Length );
 			/*
 			else {
 				double d = Random.NextGaussian( curValue, stdev );
@@ -120,13 +129,13 @@ namespace ProjectScheduling.Model
 
 		public double Evaluate( ProjectSchedule specimen )
 		{
-			int[] busyResources = new int[Resources.Count];
-			int[] resourceTasks = new int[Resources.Count];
-			bool[] completedTasks = new bool[Tasks.Count];
+			int[] busyResources = new int[Resources.Length];
+			int[] resourceTasks = new int[Resources.Length];
+			bool[] completedTasks = new bool[Tasks.Length];
 
-			foreach ( int rId in Resources.Keys ) {
-				busyResources[rId] = -1;
-				resourceTasks[rId] = -1;
+			foreach ( Resource r in Resources ) {
+				busyResources[r.Id] = -1;
+				resourceTasks[r.Id] = -1;
 			}
 
 			int completedTasksCount = 0;
@@ -134,7 +143,7 @@ namespace ProjectScheduling.Model
 			double totalCost = 0;
 			double penalty = 0;
 
-			int offset = Tasks.Count;
+			int offset = Tasks.Length;
 			List<TaskData> pendingTasks = new List<TaskData>( offset );
 			for ( int i = 0; i < offset; ++i ) {
 				pendingTasks.Add( new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] ) );
@@ -144,27 +153,33 @@ namespace ProjectScheduling.Model
 			// TODO: Optionally sort by time to complete, cost, or pick randomly here,
 			// for tasks with the same priority.
 
-			while ( completedTasksCount < Tasks.Count ) {
+			// Correct for penalty applied during the first time step, when no tasks
+			// have yet been assigned to resourcs.
+			penalty = -penaltyIdlePerResource * Resources.Length;
+
+			while ( completedTasksCount < Tasks.Length ) {
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
 				bool allBusy = true;
-				foreach ( int rId in Resources.Keys ) {
-					int taskDoneTime = busyResources[rId];
+				foreach ( Resource r in Resources ) {
+					int taskDoneTime = busyResources[r.Id];
 
 					if ( taskDoneTime < 0 ) {
 						// A resource is idle
 						allBusy = false;
+
+						// Apply penalty for each idle resource at each time step.
+						penalty += penaltyIdlePerResource;
 					}
 					else if ( taskDoneTime <= currentTime ) {
-						Task t = Tasks[resourceTasks[rId]];
-						Resource r = Resources[rId];
+						Task t = Tasks[resourceTasks[r.Id]];
 						totalCost += t.Duration * r.Cost;
 
 						completedTasks[t.Id] = true;
 						completedTasksCount++;
-						busyResources[rId] = -1;
-						resourceTasks[rId] = -1;
+						busyResources[r.Id] = -1;
+						resourceTasks[r.Id] = -1;
 
 						// A resource is being released
 						allBusy = false;
@@ -190,7 +205,7 @@ namespace ProjectScheduling.Model
 					if ( busyResources[td.ResourceId] >= 0 ) {
 						// Resource is busy, we can't complete this task at this point in time.
 						// Apply penalty.
-						penalty += PenaltyWaitingTask;
+						penalty += penaltyWaitPerTask;
 						continue;
 					}
 
@@ -209,13 +224,6 @@ namespace ProjectScheduling.Model
 
 					pendingTasks.Remove( td );
 					--i;
-				}
-
-				// Apply penalty for each idle resource at each time step.
-				foreach ( int rId in Resources.Keys ) {
-					if ( busyResources[rId] == -1 ) {
-						penalty += PenaltyIdleResource;
-					}
 				}
 			}
 

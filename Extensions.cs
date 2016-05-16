@@ -11,6 +11,9 @@ namespace ProjectScheduling
 			return mean + stdDev * self.NextNormal();
 		}
 
+		/// <summary>
+		/// Returns a random number in range -1 to 1.
+		/// </summary>
 		public static double NextNormal( this Random self )
 		{
 			double u1 = self.NextDouble();
@@ -19,6 +22,9 @@ namespace ProjectScheduling
 					Math.Sin( 2.0 * Math.PI * u2 );
 		}
 
+		/// <summary>
+		/// Returns a random boolean value.
+		/// </summary>
 		public static bool NextBool( this Random self )
 		{
 			return self.Next( 0, 2 ) == 0;

@@ -11,20 +11,19 @@ namespace ProjectScheduling.Model
 
 		public Dictionary<int, int> SkillRequirements { get; private set; }
 
-		public List<int> Predecessors { get; private set; }
+		public int[] Predecessors { get; private set; }
 
 		public Task( int id, int duration, Dictionary<int, int> skillReqs, List<int> pred )
 		{
 			Id = id;
 			Duration = duration;
 			SkillRequirements = new Dictionary<int, int>();
-			Predecessors = new List<int>();
 
 			foreach ( int skillKey in skillReqs.Keys ) {
 				SkillRequirements.Add( skillKey, skillReqs[skillKey] );
 			}
 
-			pred.ForEach( predId => Predecessors.Add( predId ) );
+			Predecessors = pred.ToArray();
 		}
 
 		public override string ToString()

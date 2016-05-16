@@ -41,7 +41,7 @@ namespace ProjectScheduling.Model
 
 			if ( env.Random.NextDouble() < overrideMutationChance ) {
 				int old = Priority;
-				int stdev = isClone ? env.Tasks.Count : 5;
+				int stdev = isClone ? env.Tasks.Length : 5;
 				Priority = env.RandomPriority( Priority, stdev );
 				changed |= old != Priority;
 			}

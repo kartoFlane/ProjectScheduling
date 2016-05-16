@@ -79,7 +79,7 @@ namespace ProjectScheduling
 			MutationChance = 0.05;
 			CrossoverChance = 1;
 			CloneElimination = ECloneEliminationStrategy.MUTATION;
-			CrossoverStrategy = ECrossoverStrategy.EQUAL_OPPORTUNITY_DOUBLE;
+			CrossoverStrategy = ECrossoverStrategy.SIMPLE_PAIRS;
 
 			DebugOutput = true;
 			AlgorithmicRelations = true;
@@ -88,8 +88,8 @@ namespace ProjectScheduling
 			OutputDir = "../../../_solutions/";
 
 			PenaltyRelations = 0.3;
-			PenaltyIdleResource = 0.1; // 0.005
-			PenaltyWaitingTask = 0.001; // 0.011
+			PenaltyIdleResource = 1;
+			PenaltyWaitingTask = 1;
 		}
 
 		public GeneticAlgorithm( Parameters parameters )
@@ -143,12 +143,6 @@ namespace ProjectScheduling
 			Console.WriteLine( "Using " + defFile.Name );
 			DefIO.ReadDEF( env, defFile.FullName );
 
-			// Assertions
-			if ( env.Resources.Count > 0 )
-				Assert( env.Resources.Keys.Max() == env.Resources.Count - 1 );
-			if ( env.Tasks.Count > 0 )
-				Assert( env.Tasks.Keys.Max() == env.Tasks.Count - 1 );
-
 			minMap = new Dictionary<int, double>();
 			maxMap = new Dictionary<int, double>();
 			avgMap = new Dictionary<int, double>();
@@ -187,13 +181,13 @@ namespace ProjectScheduling
 					case ECrossoverStrategy.FALLOFF_LINEAR: {
 						CrossOver_FalloffLinear( env, population, q );
 					} break;
-					case ECrossoverStrategy.FALLOFF_NORMAL: {
-						CrossOver_FalloffNormal( env, population, q );
+					case ECrossoverStrategy.FALLOFF_COSINE: {
+						CrossOver_FalloffCosine( env, population, q );
 					} break;
 					case ECrossoverStrategy.EQUAL_OPPORTUNITY: {
-						CrossOver_SimplePairs( env, population, q );
+						CrossOver_EqualOpportunity( env, population, q, false );
 					} break;
-					case ECrossoverStrategy.EQUAL_OPPORTUNITY_DOUBLE: {
+					case ECrossoverStrategy.ORGY: {
 						CrossOver_EqualOpportunity( env, population, q, true );
 					} break;
 					default: {
@@ -341,29 +335,29 @@ namespace ProjectScheduling
 			List<ProjectSchedule> population,
 			List<ProjectSchedule> breeders )
 		{
-			CrossOver_Falloff( env, population, breeders, false );
+			for ( int i = 0; i < breeders.Count; ++i ) {
+				for ( int j = i + 1; j < breeders.Count; ++j ) {
+					double p = ( breeders.Count - j - 1 ) / ( (double)breeders.Count - i );
+
+					if ( env.Random.NextDouble() < p ) {
+						population.AddRange( breeders.ElementAt( i ).CrossOver(
+							env, breeders.ElementAt( j ) ) );
+					}
+				}
+			}
 		}
 
-		private static void CrossOver_FalloffNormal(
+		private static void CrossOver_FalloffCosine(
 			EnvironmentContext env,
 			List<ProjectSchedule> population,
 			List<ProjectSchedule> breeders )
 		{
-			CrossOver_Falloff( env, population, breeders, true );
-		}
-
-		private static void CrossOver_Falloff(
-			EnvironmentContext env,
-			List<ProjectSchedule> population,
-			List<ProjectSchedule> breeders,
-			bool normalDistr )
-		{
 			for ( int i = 0; i < breeders.Count; ++i ) {
 				for ( int j = i + 1; j < breeders.Count; ++j ) {
-					double c = normalDistr ? env.Random.NextNormal() : env.Random.NextDouble();
-					double p = ( breeders.Count - j ) / ( (double)breeders.Count - i );
+					double f = ( breeders.Count - j - 1 ) / ( (double)breeders.Count - i );
+					double p = Math.Cos( f * Math.PI * 0.5 );
 
-					if ( c < p ) {
+					if ( env.Random.NextDouble() < p ) {
 						population.AddRange( breeders.ElementAt( i ).CrossOver(
 							env, breeders.ElementAt( j ) ) );
 					}
@@ -501,8 +495,8 @@ namespace ProjectScheduling
 	{
 		SIMPLE_PAIRS,
 		FALLOFF_LINEAR,
-		FALLOFF_NORMAL,
+		FALLOFF_COSINE,
 		EQUAL_OPPORTUNITY,
-		EQUAL_OPPORTUNITY_DOUBLE
+		ORGY
 	}
 }

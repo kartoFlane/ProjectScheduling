@@ -15,9 +15,6 @@ namespace ProjectScheduling.Model
 			if ( !File.Exists( path ) )
 				throw new ArgumentException( "File not found: " + path );
 
-			env.Resources.Clear();
-			env.Tasks.Clear();
-
 			string content = File.ReadAllText( path );
 
 			const string sectionPtrn = @"=+([^=]+)";
@@ -28,6 +25,9 @@ namespace ProjectScheduling.Model
 			string taskPtrn = Group( "\\d+" ) + "\\s*?" + Group( "\\d+" ) +
 				"\\s*?" + Group( skillPtrn, "*" ) +
 				Group( "\\s*?\\d+", "*" ) + EndOfLine();
+
+			List<Resource> resources = new List<Resource>();
+			List<Task> tasks = new List<Task>();
 
 			Match m = null;
 			MatchCollection mc = null;
@@ -52,7 +52,7 @@ namespace ProjectScheduling.Model
 					skillPool.Add( skillId, skillReq );
 				}
 
-				env.Resources.Add( id, new Resource( id, cost, skillPool ) );
+				resources.Add( new Resource( id, cost, skillPool ) );
 			}
 
 			// Task table
@@ -77,10 +77,12 @@ namespace ProjectScheduling.Model
 					prereqs.Add( preId );
 				}
 
-				env.Tasks.Add( id, new Task( id, duration, skillReqs, prereqs ) );
+				tasks.Add( new Task( id, duration, skillReqs, prereqs ) );
 			}
 
-			env.ComputeTaskResourceCache();
+			env.Load( resources, tasks );
+
+			env.ComputeCache();
 		}
 
 		public static void WriteDEF(
@@ -99,16 +101,16 @@ namespace ProjectScheduling.Model
 			Dictionary<int, int> busyResourceMap = new Dictionary<int, int>();
 			Dictionary<int, int> resourceTaskMap = new Dictionary<int, int>();
 
-			foreach ( int rId in env.Resources.Keys ) {
-				busyResourceMap[rId] = -1;
-				resourceTaskMap[rId] = -1;
+			foreach ( Resource r in env.Resources ) {
+				busyResourceMap[r.Id] = -1;
+				resourceTaskMap[r.Id] = -1;
 			}
 
 			HashSet<int> completedTasks = new HashSet<int>();
 
 			List<string> prereqs = new List<string>();
 
-			int offset = env.Tasks.Count;
+			int offset = env.Tasks.Length;
 			List<TaskData> pendingTasks = new List<TaskData>( offset );
 			for ( int i = 0; i < offset; ++i ) {
 				pendingTasks.Add( new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] ) );
@@ -118,24 +120,23 @@ namespace ProjectScheduling.Model
 			int currentTime = 0;
 			double totalCost = 0;
 
-			while ( completedTasks.Count < env.Tasks.Count ) {
+			while ( completedTasks.Count < env.Tasks.Length ) {
 				bool newRow = false;
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
-				foreach ( int rId in env.Resources.Keys ) {
-					int taskDoneTime = busyResourceMap[rId];
+				foreach ( Resource r in env.Resources ) {
+					int taskDoneTime = busyResourceMap[r.Id];
 
 					if ( taskDoneTime < 0 ) {
 					}
 					else if ( taskDoneTime <= currentTime ) {
-						Task t = env.Tasks[resourceTaskMap[rId]];
-						Resource r = env.Resources[rId];
+						Task t = env.Tasks[resourceTaskMap[r.Id]];
 						totalCost += t.Duration * r.Cost;
 
-						completedTasks.Add( resourceTaskMap[rId] );
-						busyResourceMap[rId] = -1;
-						resourceTaskMap[rId] = -1;
+						completedTasks.Add( resourceTaskMap[r.Id] );
+						busyResourceMap[r.Id] = -1;
+						resourceTaskMap[r.Id] = -1;
 					}
 				}
 

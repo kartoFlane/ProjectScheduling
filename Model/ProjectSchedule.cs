@@ -26,11 +26,11 @@ namespace ProjectScheduling.Model
 		public ProjectSchedule( EnvironmentContext env )
 			: this()
 		{
-			Genotype.Capacity = env.Tasks.Count * 2;
-			for ( int i = 0; i < env.Tasks.Count; ++i ) {
+			Genotype.Capacity = env.Tasks.Length * 2;
+			for ( int i = 0; i < env.Tasks.Length; ++i ) {
 				Genotype.Add( env.RandomResourceId( i ) );
 			}
-			for ( int i = 0; i < env.Tasks.Count; ++i ) {
+			for ( int i = 0; i < env.Tasks.Length; ++i ) {
 				Genotype.Add( env.RandomPriority() );
 			}
 		}
@@ -54,7 +54,7 @@ namespace ProjectScheduling.Model
 			if ( overrideMutationChance < 0 )
 				overrideMutationChance = env.ProbabilityMutation;
 
-			for ( int i = 0; i < env.Tasks.Count; ++i ) {
+			for ( int i = 0; i < env.Tasks.Length; ++i ) {
 				if ( env.Random.NextDouble() < overrideMutationChance ) {
 					int old = Genotype[i];
 					Genotype[i] = env.RandomResourceId( i );
@@ -62,8 +62,8 @@ namespace ProjectScheduling.Model
 				}
 			}
 
-			int offset = env.Tasks.Count;
-			for ( int i = 0; i < env.Tasks.Count; ++i ) {
+			int offset = env.Tasks.Length;
+			for ( int i = 0; i < env.Tasks.Length; ++i ) {
 				if ( env.Random.NextDouble() < overrideMutationChance ) {
 					int j = i + offset;
 					int old = Genotype[j];
@@ -79,7 +79,7 @@ namespace ProjectScheduling.Model
 				ProjectSchedule[] result = new ProjectSchedule[1];
 				result[0] = new ProjectSchedule();
 
-				result[0].CrossOver( this, fiancee, env.Random.Next( 1, Genotype.Count - 1 ) );
+				result[0].CrossOver( this, fiancee, env.Random.Next( 0, Genotype.Count ) );
 
 				return result;
 			}
