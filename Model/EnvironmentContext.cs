@@ -120,22 +120,16 @@ namespace ProjectScheduling.Model
 
 		public double Evaluate( ProjectSchedule specimen )
 		{
-			// Preallocate space in the collections. Saves ~6% of runtime.
-			Dictionary<int, int> busyResourceMap = new Dictionary<int, int>( Resources.Count );
-			Dictionary<int, int> resourceTaskMap = new Dictionary<int, int>( Resources.Count );
+			int[] busyResources = new int[Resources.Count];
+			int[] resourceTasks = new int[Resources.Count];
+			bool[] completedTasks = new bool[Tasks.Count];
 
 			foreach ( int rId in Resources.Keys ) {
-				busyResourceMap[rId] = -1;
-				resourceTaskMap[rId] = -1;
+				busyResources[rId] = -1;
+				resourceTasks[rId] = -1;
 			}
 
-			Dictionary<int, bool> completedTaskMap = new Dictionary<int, bool>( Tasks.Count );
 			int completedTasksCount = 0;
-
-			foreach ( int tId in Tasks.Keys ) {
-				completedTaskMap[tId] = false;
-			}
-
 			int currentTime = 0;
 			double totalCost = 0;
 			double penalty = 0;
@@ -156,21 +150,21 @@ namespace ProjectScheduling.Model
 				// Check whether any tasks have been completed at this time step.
 				bool allBusy = true;
 				foreach ( int rId in Resources.Keys ) {
-					int taskDoneTime = busyResourceMap[rId];
+					int taskDoneTime = busyResources[rId];
 
 					if ( taskDoneTime < 0 ) {
 						// A resource is idle
 						allBusy = false;
 					}
 					else if ( taskDoneTime <= currentTime ) {
-						Task t = Tasks[resourceTaskMap[rId]];
+						Task t = Tasks[resourceTasks[rId]];
 						Resource r = Resources[rId];
 						totalCost += t.Duration * r.Cost;
 
-						completedTaskMap[t.Id] = true;
+						completedTasks[t.Id] = true;
 						completedTasksCount++;
-						busyResourceMap[rId] = -1;
-						resourceTaskMap[rId] = -1;
+						busyResources[rId] = -1;
+						resourceTasks[rId] = -1;
 
 						// A resource is being released
 						allBusy = false;
@@ -189,11 +183,11 @@ namespace ProjectScheduling.Model
 					Resource r = Resources[td.ResourceId];
 					Task t = Tasks[td.taskId];
 
-					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTaskMap[p] ) ) {
+					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTasks[p] ) ) {
 						continue;
 					}
 
-					if ( busyResourceMap[td.ResourceId] >= 0 ) {
+					if ( busyResources[td.ResourceId] >= 0 ) {
 						// Resource is busy, we can't complete this task at this point in time.
 						// Apply penalty.
 						penalty += PenaltyWaitingTask;
@@ -201,13 +195,13 @@ namespace ProjectScheduling.Model
 					}
 
 					// We can use the resource, so mark it as busy
-					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
-					resourceTaskMap[td.ResourceId] = td.taskId;
+					busyResources[td.ResourceId] = currentTime + t.Duration;
+					resourceTasks[td.ResourceId] = td.taskId;
 
 					if ( !AlgorithmicRelations ) {
 						// Apply penalty for missing predecessor tasks
 						foreach ( int reqId in t.Predecessors ) {
-							if ( !completedTaskMap[reqId] ) {
+							if ( !completedTasks[reqId] ) {
 								penalty += PenaltyRelations;
 							}
 						}
@@ -219,7 +213,7 @@ namespace ProjectScheduling.Model
 
 				// Apply penalty for each idle resource at each time step.
 				foreach ( int rId in Resources.Keys ) {
-					if ( busyResourceMap[rId] == -1 ) {
+					if ( busyResources[rId] == -1 ) {
 						penalty += PenaltyIdleResource;
 					}
 				}
