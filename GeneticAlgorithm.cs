@@ -13,29 +13,19 @@ namespace ProjectScheduling
 	{
 		public event Action OnAllTimeBestChanged;
 
-		// Initial parameters
-		private const int _generationLimit = 100;
-		private const int _populationSize = 50;
-		private const double _breederFraction = 1;
-		private const double _cloneThreshold = 0.15;
-		private const double _mutationChance = 0.06;
-		private const double _crossoverChance = 0.66;
-
-		private const bool _debugOutput = true;
-		private const bool _algorithmicRelations = true;
-		private const ECloneEliminationStrategy _cloneStrat = ECloneEliminationStrategy.MUTATION;
-		private const ECrossoverStrategy _crossStrat = ECrossoverStrategy.EQUAL_OPPORTUNITY_DOUBLE;
-
-		// Internal
 		private EnvironmentContext env;
+
 		private FileInfo defFile;
 		private DirectoryInfo outputDir;
+
 		private ProjectSchedule allTimeBest;
+
 		private Dictionary<int, double> minMap;
 		private Dictionary<int, double> avgMap;
 		private Dictionary<int, double> maxMap;
 
-		// Publicly modifiable properties
+		#region Publicly modifiable properties
+
 		public int GenerationLimit { get; set; }
 		public int PopulationSize { get; set; }
 		public double BreederFraction { get; set; }
@@ -55,6 +45,8 @@ namespace ProjectScheduling
 		public bool DebugOutput { get; set; }
 		public bool AlgorithmicRelations { get; set; }
 
+		#endregion
+
 		public double AllTimeBestFitness { get { return allTimeBest == null ? 0 : allTimeBest.GetFitness( env ); } }
 
 		public bool RequestTerminate { get; set; }
@@ -63,22 +55,34 @@ namespace ProjectScheduling
 		{
 			GeneticAlgorithm ga = new GeneticAlgorithm();
 
+			string[] files = Directory.GetFiles( "../../../_defs/", "*.def" );
+			Console.WriteLine( string.Format( "Found {0} .def files: ", files.Length ) );
+			for ( int i = 0; i < files.Length; ++i ) {
+				Console.WriteLine( string.Format( "{0,2}.\t{1}", i, new FileInfo( files[i] ).Name ) );
+			}
+			Console.WriteLine();
+
+			// 0, 1, 2, 3, 4
+			int fileId = 1;
+
+			ga.InputDef = files[fileId];
+
 			ga.Start();
 		}
 
 		public GeneticAlgorithm()
 		{
-			GenerationLimit = _generationLimit;
-			PopulationSize = _populationSize;
-			BreederFraction = _breederFraction;
-			CloneThreshold = _cloneThreshold;
-			MutationChance = _mutationChance;
-			CrossoverChance = _crossoverChance;
-			CloneElimination = _cloneStrat;
-			CrossoverStrategy = _crossStrat;
+			GenerationLimit = 100;
+			PopulationSize = 50;
+			BreederFraction = 1;
+			CloneThreshold = 0.15;
+			MutationChance = 0.05;
+			CrossoverChance = 1;
+			CloneElimination = ECloneEliminationStrategy.MUTATION;
+			CrossoverStrategy = ECrossoverStrategy.EQUAL_OPPORTUNITY_DOUBLE;
 
-			DebugOutput = _debugOutput;
-			AlgorithmicRelations = _algorithmicRelations;
+			DebugOutput = true;
+			AlgorithmicRelations = true;
 
 			InputDef = "../../../_defs/100_10_48_15.def";
 			OutputDir = "../../../_solutions/";
@@ -432,6 +436,9 @@ namespace ProjectScheduling
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Crossover chance: {0}\n", CrossoverChance );
 			buf.AppendFormat( "Algorithmic prereq: {0}\n", AlgorithmicRelations );
 			buf.AppendFormat( "Clone elim. strategy: {0}\n", CloneElimination.ToString() );
+			buf.AppendFormat( "Crossover strategy: {0}\n", CrossoverStrategy.ToString() );
+			buf.AppendFormat( "Penalty Idle Resource: {0}\n", PenaltyIdleResource );
+			buf.AppendFormat( "Penalty Waiting Task: {0}\n", PenaltyWaitingTask );
 
 			File.WriteAllText( path, buf.ToString() );
 		}
