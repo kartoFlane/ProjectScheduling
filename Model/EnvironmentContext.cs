@@ -213,15 +213,15 @@ namespace ProjectScheduling.Model
 						}
 					}
 
-					// Apply penalty for each idle resource at each time step.
-					foreach ( int rId in Resources.Keys ) {
-						if ( busyResourceMap[rId] == -1 ) {
-							penalty += PenaltyIdleResource;
-						}
-					}
-
 					pendingTasks.Remove( td );
 					--i;
+				}
+
+				// Apply penalty for each idle resource at each time step.
+				foreach ( int rId in Resources.Keys ) {
+					if ( busyResourceMap[rId] == -1 ) {
+						penalty += PenaltyIdleResource;
+					}
 				}
 			}
 
