@@ -6,7 +6,6 @@ namespace ProjectScheduling.Model
 {
 	public class EnvironmentContext
 	{
-		private static IEnumerable<int> _initialCapacityList;
 		private static Dictionary<int, List<int>> _taskResourceMap;
 
 		#region Probabilities
@@ -47,8 +46,6 @@ namespace ProjectScheduling.Model
 			Random = new Random();
 
 			_taskResourceMap = new Dictionary<int, List<int>>();
-
-			_initialCapacityList = Enumerable.Range( 0, Tasks.Count );
 		}
 
 		public void ComputeTaskResourceCache()
@@ -132,10 +129,12 @@ namespace ProjectScheduling.Model
 				resourceTaskMap[rId] = -1;
 			}
 
-			// HashSet doesn't expose an initial capacity constructor.
-			// Requires abusing implementation detail of the class to set it.
-			HashSet<int> completedTasks = new HashSet<int>( _initialCapacityList );
-			completedTasks.Clear();
+			Dictionary<int, bool> completedTaskMap = new Dictionary<int, bool>( Tasks.Count );
+			int completedTasksCount = 0;
+
+			foreach ( int tId in Tasks.Keys ) {
+				completedTaskMap[tId] = false;
+			}
 
 			int currentTime = 0;
 			double totalCost = 0;
@@ -151,7 +150,7 @@ namespace ProjectScheduling.Model
 			// TODO: Optionally sort by time to complete, cost, or pick randomly here,
 			// for tasks with the same priority.
 
-			while ( completedTasks.Count < Tasks.Count ) {
+			while ( completedTasksCount < Tasks.Count ) {
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
@@ -168,7 +167,8 @@ namespace ProjectScheduling.Model
 						Resource r = Resources[rId];
 						totalCost += t.Duration * r.Cost;
 
-						completedTasks.Add( resourceTaskMap[rId] );
+						completedTaskMap[t.Id] = true;
+						completedTasksCount++;
 						busyResourceMap[rId] = -1;
 						resourceTaskMap[rId] = -1;
 
@@ -189,7 +189,7 @@ namespace ProjectScheduling.Model
 					Resource r = Resources[td.ResourceId];
 					Task t = Tasks[td.taskId];
 
-					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
+					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTaskMap[p] ) ) {
 						continue;
 					}
 
@@ -207,7 +207,7 @@ namespace ProjectScheduling.Model
 					if ( !AlgorithmicRelations ) {
 						// Apply penalty for missing predecessor tasks
 						foreach ( int reqId in t.Predecessors ) {
-							if ( !completedTasks.Contains( reqId ) ) {
+							if ( !completedTaskMap[reqId] ) {
 								penalty += PenaltyRelations;
 							}
 						}
