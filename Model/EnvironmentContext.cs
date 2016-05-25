@@ -6,7 +6,10 @@ namespace ProjectScheduling.Model
 {
 	public class EnvironmentContext
 	{
+		// Resources that can complete this task
 		private static List<int>[] _taskResources;
+		// Tasks that can be completed by this resource
+		private static List<int>[] _resourceTasks;
 
 		#region Probabilities
 
@@ -56,9 +59,13 @@ namespace ProjectScheduling.Model
 		public void ComputeCache()
 		{
 			_taskResources = new List<int>[Tasks.Length];
+			_resourceTasks = new List<int>[Resources.Length];
+
+			for ( int i = 0; i < _resourceTasks.Length; ++i ) {
+				_resourceTasks[i] = new List<int>( Tasks.Length );
+			}
 
 			foreach ( Task t in Tasks ) {
-
 				var resSet = Resources.ToList().FindAll( r =>
 				{
 					bool result = true;
@@ -76,6 +83,9 @@ namespace ProjectScheduling.Model
 				}
 
 				_taskResources[t.Id] = resSet;
+				foreach ( int rId in resSet ) {
+					_resourceTasks[rId].Add( t.Id );
+				}
 			}
 
 			penaltyIdlePerResource = PenaltyIdleResource / Resources.Length;
@@ -146,31 +156,47 @@ namespace ProjectScheduling.Model
 			int offset = Tasks.Length;
 			List<TaskData> pendingTasks = new List<TaskData>( offset );
 			for ( int i = 0; i < offset; ++i ) {
-				pendingTasks.Add( new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] ) );
+				TaskData td = new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] );
+				td.Task = Tasks[td.taskId];
+				td.Resource = Resources[td.ResourceId];
+				pendingTasks.Add( td );
 			}
+
 			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToList();
 
 			// TODO: Optionally sort by time to complete, cost, or pick randomly here,
 			// for tasks with the same priority.
 
-			// Correct for penalty applied during the first time step, when no tasks
-			// have yet been assigned to resourcs.
-			penalty = -penaltyIdlePerResource * Resources.Length;
+			TaskData[] validTasks = pendingTasks.Where( td => td.Task.Predecessors.Length == 0 ).ToArray();
 
-			while ( completedTasksCount < Tasks.Length ) {
+			while ( completedTasksCount < offset ) {
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
 				bool allBusy = true;
+				bool wasReleased = false;
+
+				int earliest = int.MaxValue;
 				foreach ( Resource r in Resources ) {
 					int taskDoneTime = busyResources[r.Id];
+
+					if ( taskDoneTime > 0 && taskDoneTime < earliest ) {
+						earliest = taskDoneTime;
+					}
 
 					if ( taskDoneTime < 0 ) {
 						// A resource is idle
 						allBusy = false;
 
-						// Apply penalty for each idle resource at each time step.
-						penalty += penaltyIdlePerResource;
+						if ( penaltyIdlePerResource != 0 ) {
+							int ts = _resourceTasks[r.Id].Intersect( validTasks.Where( e => e != null ).Select( e => e.taskId ) ).Count();
+
+							if ( ts > 0 ) {
+								// Apply penalty for each idle resource at each time step, if there are tasks
+								// that can be done by this resource.
+								penalty += penaltyIdlePerResource;
+							}
+						}
 					}
 					else if ( taskDoneTime <= currentTime ) {
 						Task t = Tasks[resourceTasks[r.Id]];
@@ -183,20 +209,33 @@ namespace ProjectScheduling.Model
 
 						// A resource is being released
 						allBusy = false;
+						wasReleased = true;
 					}
 				}
 
 				if ( allBusy ) {
 					// If all resources are currently busy, then don't bother needlessly
-					// looking for a task to insert
+					// looking for a task to insert.
+					// Instead, skip to the time when a resource is freed.
+					currentTime = earliest;
 					continue;
 				}
+				else if ( wasReleased ) {
+					// A resource was released, meaning a task was completed -- recompute valid tasks
+					validTasks = pendingTasks.
+						Where( td => td.Task.Predecessors.All( p => completedTasks[p] ) ).
+						OrderBy( td => td.Priority ).
+						ToArray();
+				}
 
-				for ( int i = 0; i < pendingTasks.Count; ++i ) {
-					TaskData td = pendingTasks[i];
+				for ( int i = 0; i < validTasks.Length; ++i ) {
+					TaskData td = validTasks[i];
 
-					Resource r = Resources[td.ResourceId];
-					Task t = Tasks[td.taskId];
+					if ( td == null )
+						continue;
+
+					Resource r = td.Resource;
+					Task t = td.Task;
 
 					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTasks[p] ) ) {
 						continue;
@@ -222,8 +261,8 @@ namespace ProjectScheduling.Model
 						}
 					}
 
+					validTasks[i] = null;
 					pendingTasks.Remove( td );
-					--i;
 				}
 			}
 
