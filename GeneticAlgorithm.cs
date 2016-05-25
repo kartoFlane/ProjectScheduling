@@ -28,12 +28,14 @@ namespace ProjectScheduling
 
 		public int GenerationLimit { get; set; }
 		public int PopulationSize { get; set; }
+		public int TournamentSize { get; set; }
 		public double BreederFraction { get; set; }
 		public double CloneThreshold { get; set; }
 		public double MutationChance { get; set; }
 		public double CrossoverChance { get; set; }
 		public ECloneEliminationStrategy CloneElimination { get; set; }
 		public ECrossoverStrategy CrossoverStrategy { get; set; }
+		public ESelectionStrategy SelectionStrategy { get; set; }
 
 		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
@@ -72,14 +74,16 @@ namespace ProjectScheduling
 
 		public GeneticAlgorithm()
 		{
-			GenerationLimit = 100;
-			PopulationSize = 50;
+			GenerationLimit = 500;
+			PopulationSize = 300;
+			TournamentSize = 10;
 			BreederFraction = 1;
 			CloneThreshold = 0.15;
-			MutationChance = 0.05;
-			CrossoverChance = 1;
+			MutationChance = 0.015;
+			CrossoverChance = 1.00;
 			CloneElimination = ECloneEliminationStrategy.MUTATION;
 			CrossoverStrategy = ECrossoverStrategy.SIMPLE_PAIRS;
+			SelectionStrategy = ESelectionStrategy.RANKING;
 
 			DebugOutput = true;
 			AlgorithmicRelations = true;
@@ -88,20 +92,22 @@ namespace ProjectScheduling
 			OutputDir = "../../../_solutions/";
 
 			PenaltyRelations = 0.3;
-			PenaltyIdleResource = 1;
-			PenaltyWaitingTask = 1;
+			PenaltyIdleResource = 0.3;
+			PenaltyWaitingTask = 0.1;
 		}
 
 		public GeneticAlgorithm( Parameters parameters )
 		{
 			GenerationLimit = parameters.GenerationLimit;
 			PopulationSize = parameters.PopulationSize;
+			TournamentSize = parameters.TournamentSize;
 			BreederFraction = parameters.BreederFraction;
 			CloneThreshold = parameters.CloneThreshold;
 			MutationChance = parameters.MutationChance;
 			CrossoverChance = parameters.CrossoverChance;
 			CloneElimination = parameters.CloneElimination;
 			CrossoverStrategy = parameters.CrossoverStrategy;
+			SelectionStrategy = parameters.SelectionStrategy;
 
 			DebugOutput = parameters.DebugOutput;
 			AlgorithmicRelations = parameters.AlgorithmicRelations;
@@ -240,12 +246,34 @@ namespace ProjectScheduling
 				}
 
 				// Selection
-				// Find top (populationCount) specimens in order to keep the population stable
 				Console.Write( "\t\tSelection... " );
-				population = population
-					.OrderBy( e => e.GetFitness( env ) )
-					.Take( PopulationSize )
-					.ToList();
+				switch ( SelectionStrategy ) {
+					case ESelectionStrategy.RANKING: {
+						// Find top (populationCount) specimens in order to keep the population stable
+						population = population
+							.OrderBy( e => e.GetFitness( env ) )
+							.Take( PopulationSize )
+							.ToList();
+					} break;
+
+					case ESelectionStrategy.TOURNAMENT: {
+						List<ProjectSchedule> npop = new List<ProjectSchedule>( PopulationSize );
+						while ( npop.Count < PopulationSize ) {
+							List<ProjectSchedule> t = new List<ProjectSchedule>();
+							for ( int i = 0; i < TournamentSize; ++i ) {
+								t.Add( env.Random.From( population ) );
+							}
+
+							t.OrderBy( spec => spec.GetFitness( env ) );
+							npop.Add( t[0] );
+						}
+						population = npop;
+					} break;
+
+					default: {
+						throw new NotImplementedException( SelectionStrategy.ToString() );
+					}
+				}
 				Console.Write( "Done" );
 
 				Console.Write( " | Logs... " );
@@ -441,12 +469,14 @@ namespace ProjectScheduling
 		{
 			public int GenerationLimit { get; set; }
 			public int PopulationSize { get; set; }
+			public int TournamentSize { get; set; }
 			public double BreederFraction { get; set; }
 			public double CloneThreshold { get; set; }
 			public double MutationChance { get; set; }
 			public double CrossoverChance { get; set; }
 			public ECloneEliminationStrategy CloneElimination { get; set; }
 			public ECrossoverStrategy CrossoverStrategy { get; set; }
+			public ESelectionStrategy SelectionStrategy { get; set; }
 
 			public double PenaltyRelations { get; set; }
 			public double PenaltyIdleResource { get; set; }
@@ -466,12 +496,14 @@ namespace ProjectScheduling
 			{
 				GenerationLimit = other.GenerationLimit;
 				PopulationSize = other.PopulationSize;
+				TournamentSize = other.TournamentSize;
 				BreederFraction = other.BreederFraction;
 				CloneThreshold = other.CloneThreshold;
 				MutationChance = other.MutationChance;
 				CrossoverChance = other.CrossoverChance;
 				CloneElimination = other.CloneElimination;
 				CrossoverStrategy = other.CrossoverStrategy;
+				SelectionStrategy = other.SelectionStrategy;
 
 				DebugOutput = other.DebugOutput;
 				AlgorithmicRelations = other.AlgorithmicRelations;
@@ -498,5 +530,11 @@ namespace ProjectScheduling
 		FALLOFF_COSINE,
 		EQUAL_OPPORTUNITY,
 		ORGY
+	}
+
+	public enum ESelectionStrategy
+	{
+		RANKING,
+		TOURNAMENT
 	}
 }
