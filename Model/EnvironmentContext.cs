@@ -6,6 +6,7 @@ namespace ProjectScheduling.Model
 {
 	public class EnvironmentContext
 	{
+		// Resources that can complete this task
 		private static List<int>[] _taskResources;
 
 		#region Probabilities
@@ -15,27 +16,10 @@ namespace ProjectScheduling.Model
 
 		#endregion
 
-		#region Environment Functionalities
-
-		/// <summary>
-		/// Whether precedence relations should be handled with an algorithm
-		/// that prevents erroneous assignments. If false, missing a precedence
-		/// relation will result in penalty being applied instead.
-		/// </summary>
-		public bool AlgorithmicRelations { get; set; }
-		public double PenaltyRelations { get; set; }
-		public double PenaltyIdleResource { get; set; }
-		public double PenaltyWaitingTask { get; set; }
-
-		#endregion
-
 		#region Environment Properties
 
 		public Resource[] Resources { get; private set; }
 		public Task[] Tasks { get; private set; }
-
-		private double penaltyIdlePerResource;
-		private double penaltyWaitPerTask;
 
 		#endregion
 
@@ -77,9 +61,6 @@ namespace ProjectScheduling.Model
 
 				_taskResources[t.Id] = resSet;
 			}
-
-			penaltyIdlePerResource = PenaltyIdleResource / Resources.Length;
-			penaltyWaitPerTask = PenaltyWaitingTask / Tasks.Length;
 		}
 
 		#region Population Generation / Mutation
@@ -146,31 +127,37 @@ namespace ProjectScheduling.Model
 			int offset = Tasks.Length;
 			List<TaskData> pendingTasks = new List<TaskData>( offset );
 			for ( int i = 0; i < offset; ++i ) {
-				pendingTasks.Add( new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] ) );
+				TaskData td = new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] );
+				td.Task = Tasks[td.taskId];
+				td.Resource = Resources[td.ResourceId];
+				pendingTasks.Add( td );
 			}
+
 			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToList();
 
 			// TODO: Optionally sort by time to complete, cost, or pick randomly here,
 			// for tasks with the same priority.
 
-			// Correct for penalty applied during the first time step, when no tasks
-			// have yet been assigned to resourcs.
-			penalty = -penaltyIdlePerResource * Resources.Length;
+			TaskData[] validTasks = pendingTasks.Where( td => td.Task.Predecessors.Length == 0 ).ToArray();
 
-			while ( completedTasksCount < Tasks.Length ) {
+			while ( completedTasksCount < offset ) {
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
 				bool allBusy = true;
+				bool wasReleased = false;
+
+				int earliest = int.MaxValue;
 				foreach ( Resource r in Resources ) {
 					int taskDoneTime = busyResources[r.Id];
+
+					if ( taskDoneTime > 0 && taskDoneTime < earliest ) {
+						earliest = taskDoneTime;
+					}
 
 					if ( taskDoneTime < 0 ) {
 						// A resource is idle
 						allBusy = false;
-
-						// Apply penalty for each idle resource at each time step.
-						penalty += penaltyIdlePerResource;
 					}
 					else if ( taskDoneTime <= currentTime ) {
 						Task t = Tasks[resourceTasks[r.Id]];
@@ -183,29 +170,36 @@ namespace ProjectScheduling.Model
 
 						// A resource is being released
 						allBusy = false;
+						wasReleased = true;
 					}
 				}
 
 				if ( allBusy ) {
 					// If all resources are currently busy, then don't bother needlessly
-					// looking for a task to insert
+					// looking for a task to insert.
+					// Instead, skip to the time when a resource is freed.
+					currentTime = earliest;
 					continue;
 				}
+				else if ( wasReleased ) {
+					// A resource was released, meaning a task was completed -- recompute valid tasks
+					validTasks = pendingTasks.
+						Where( td => td.Task.Predecessors.All( p => completedTasks[p] ) ).
+						OrderBy( td => td.Priority ).
+						ToArray();
+				}
 
-				for ( int i = 0; i < pendingTasks.Count; ++i ) {
-					TaskData td = pendingTasks[i];
+				for ( int i = 0; i < validTasks.Length; ++i ) {
+					TaskData td = validTasks[i];
 
-					Resource r = Resources[td.ResourceId];
-					Task t = Tasks[td.taskId];
-
-					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTasks[p] ) ) {
+					if ( td == null )
 						continue;
-					}
+
+					Resource r = td.Resource;
+					Task t = td.Task;
 
 					if ( busyResources[td.ResourceId] >= 0 ) {
 						// Resource is busy, we can't complete this task at this point in time.
-						// Apply penalty.
-						penalty += penaltyWaitPerTask;
 						continue;
 					}
 
@@ -213,17 +207,8 @@ namespace ProjectScheduling.Model
 					busyResources[td.ResourceId] = currentTime + t.Duration;
 					resourceTasks[td.ResourceId] = td.taskId;
 
-					if ( !AlgorithmicRelations ) {
-						// Apply penalty for missing predecessor tasks
-						foreach ( int reqId in t.Predecessors ) {
-							if ( !completedTasks[reqId] ) {
-								penalty += PenaltyRelations;
-							}
-						}
-					}
-
+					validTasks[i] = null;
 					pendingTasks.Remove( td );
-					--i;
 				}
 			}
 

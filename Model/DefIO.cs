@@ -146,7 +146,7 @@ namespace ProjectScheduling.Model
 					Resource r = env.Resources[td.ResourceId];
 					Task t = env.Tasks[td.taskId];
 
-					if ( env.AlgorithmicRelations && !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
+					if ( !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
 						continue;
 					}
 
@@ -158,18 +158,6 @@ namespace ProjectScheduling.Model
 					// We can use the resource, so mark it as busy
 					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
 					resourceTaskMap[td.ResourceId] = td.taskId;
-
-					if ( !env.AlgorithmicRelations ) {
-						foreach ( int reqId in t.Predecessors ) {
-							if ( !completedTasks.Contains( reqId ) ) {
-								string s = "";
-								foreach ( int id in t.Predecessors )
-									s += ( id + 1 ) + ", ";
-								prereqs.Add( string.Format( "{0}\t{1}: {2} (reqs: {3})",
-									currentTime, t.Id, reqId + 1, s ) );
-							}
-						}
-					}
 
 					pendingTasks.Remove( td );
 					--i;
@@ -194,10 +182,6 @@ namespace ProjectScheduling.Model
 				buf.Append( "\nPriorities\n" ).Append( "===================================\n" );
 				for ( int i = 0; i < offset; ++i ) {
 					buf.AppendFormat( "\t{0} - {1}\n", i, specimen.Genotype[i + offset] );
-				}
-				buf.Append( "Prerequisites:\n" ).Append( "===================================\n" );
-				foreach ( string s in prereqs ) {
-					buf.Append( "\t" ).Append( s ).Append( "\n" );
 				}
 			}
 

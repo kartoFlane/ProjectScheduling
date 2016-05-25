@@ -6,7 +6,11 @@ namespace ProjectScheduling.Model
 	{
 		public readonly int taskId;
 
+		public Task Task { get; set; }
+
 		public int ResourceId { get; set; }
+
+		public Resource Resource { get; set; }
 
 		public int Priority { get; set; }
 

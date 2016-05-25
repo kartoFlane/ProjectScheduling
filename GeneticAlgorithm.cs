@@ -37,15 +37,10 @@ namespace ProjectScheduling
 		public ECrossoverStrategy CrossoverStrategy { get; set; }
 		public ESelectionStrategy SelectionStrategy { get; set; }
 
-		public double PenaltyRelations { get; set; }
-		public double PenaltyIdleResource { get; set; }
-		public double PenaltyWaitingTask { get; set; }
-
 		public string InputDef { get; set; }
 		public string OutputDir { get; set; }
 
 		public bool DebugOutput { get; set; }
-		public bool AlgorithmicRelations { get; set; }
 
 		#endregion
 
@@ -86,14 +81,9 @@ namespace ProjectScheduling
 			SelectionStrategy = ESelectionStrategy.RANKING;
 
 			DebugOutput = true;
-			AlgorithmicRelations = true;
 
 			InputDef = "../../../_defs/100_10_48_15.def";
 			OutputDir = "../../../_solutions/";
-
-			PenaltyRelations = 0.3;
-			PenaltyIdleResource = 0.3;
-			PenaltyWaitingTask = 0.1;
 		}
 
 		public GeneticAlgorithm( Parameters parameters )
@@ -110,14 +100,9 @@ namespace ProjectScheduling
 			SelectionStrategy = parameters.SelectionStrategy;
 
 			DebugOutput = parameters.DebugOutput;
-			AlgorithmicRelations = parameters.AlgorithmicRelations;
 
 			InputDef = parameters.InputDef;
 			OutputDir = parameters.OutputDir;
-
-			PenaltyRelations = parameters.PenaltyRelations;
-			PenaltyIdleResource = parameters.PenaltyIdleResource;
-			PenaltyWaitingTask = parameters.PenaltyWaitingTask;
 		}
 
 		public void Start()
@@ -128,11 +113,6 @@ namespace ProjectScheduling
 
 			env.ProbabilityMutation = MutationChance;
 			env.ProbabilityOffspring = CrossoverChance;
-
-			env.AlgorithmicRelations = AlgorithmicRelations;
-			env.PenaltyRelations = PenaltyRelations;
-			env.PenaltyIdleResource = PenaltyIdleResource;
-			env.PenaltyWaitingTask = PenaltyWaitingTask;
 
 			defFile = new FileInfo( InputDef );
 
@@ -456,11 +436,8 @@ namespace ProjectScheduling
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Clone threshold: {0}\n", CloneThreshold );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Mutation chance: {0}\n", MutationChance );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Crossover chance: {0}\n", CrossoverChance );
-			buf.AppendFormat( "Algorithmic prereq: {0}\n", AlgorithmicRelations );
 			buf.AppendFormat( "Clone elim. strategy: {0}\n", CloneElimination.ToString() );
 			buf.AppendFormat( "Crossover strategy: {0}\n", CrossoverStrategy.ToString() );
-			buf.AppendFormat( "Penalty Idle Resource: {0}\n", PenaltyIdleResource );
-			buf.AppendFormat( "Penalty Waiting Task: {0}\n", PenaltyWaitingTask );
 
 			File.WriteAllText( path, buf.ToString() );
 		}
@@ -486,7 +463,6 @@ namespace ProjectScheduling
 			public string OutputDir { get; set; }
 
 			public bool DebugOutput { get; set; }
-			public bool AlgorithmicRelations { get; set; }
 
 			public Parameters()
 			{
@@ -506,7 +482,6 @@ namespace ProjectScheduling
 				SelectionStrategy = other.SelectionStrategy;
 
 				DebugOutput = other.DebugOutput;
-				AlgorithmicRelations = other.AlgorithmicRelations;
 
 				InputDef = other.InputDef;
 				OutputDir = other.OutputDir;
