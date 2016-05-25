@@ -19,6 +19,7 @@ namespace ProjectScheduling
 		private DirectoryInfo outputDir;
 
 		private ProjectSchedule allTimeBest;
+		private long timeStart;
 
 		private Dictionary<int, double> minMap;
 		private Dictionary<int, double> avgMap;
@@ -148,7 +149,7 @@ namespace ProjectScheduling
 			Console.WriteLine();
 
 			int generationIndex = 0;
-			int timeStart = Environment.TickCount;
+			timeStart = Environment.TickCount;
 
 			while ( !RequestTerminate && generationIndex < GenerationLimit ) {
 				int genTimeStart = Environment.TickCount;
@@ -429,15 +430,19 @@ namespace ProjectScheduling
 		{
 			StringBuilder buf = new StringBuilder();
 
+			double totalTime = ( Environment.TickCount - timeStart ) / 1000.0;
+
 			buf.AppendFormat( "File: {0}\n", defFileName );
 			buf.AppendFormat( "Population: {0}\n", PopulationSize );
 			buf.AppendFormat( "Generations: {0}\n", GenerationLimit );
+			buf.AppendFormat( CultureInfo.InvariantCulture, "Total time: {0}s\n", totalTime );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Breeder fraction: {0}\n", BreederFraction );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Clone threshold: {0}\n", CloneThreshold );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Mutation chance: {0}\n", MutationChance );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Crossover chance: {0}\n", CrossoverChance );
 			buf.AppendFormat( "Clone elim. strategy: {0}\n", CloneElimination.ToString() );
 			buf.AppendFormat( "Crossover strategy: {0}\n", CrossoverStrategy.ToString() );
+			buf.AppendFormat( "Selection strategy: {0}\n", SelectionStrategy.ToString() );
 
 			File.WriteAllText( path, buf.ToString() );
 		}

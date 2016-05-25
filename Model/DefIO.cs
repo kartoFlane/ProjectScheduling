@@ -97,70 +97,90 @@ namespace ProjectScheduling.Model
 			buf.Append( " Resource assignments (resource ID - task ID) " );
 			buf.Append( "\n" );
 
-			// Preallocate space in the collections. Saves ~6% of runtime.
-			Dictionary<int, int> busyResourceMap = new Dictionary<int, int>();
-			Dictionary<int, int> resourceTaskMap = new Dictionary<int, int>();
+			int[] busyResources = new int[env.Resources.Length];
+			int[] resourceTasks = new int[env.Resources.Length];
+			bool[] completedTasks = new bool[env.Tasks.Length];
 
 			foreach ( Resource r in env.Resources ) {
-				busyResourceMap[r.Id] = -1;
-				resourceTaskMap[r.Id] = -1;
+				busyResources[r.Id] = -1;
+				resourceTasks[r.Id] = -1;
 			}
 
-			HashSet<int> completedTasks = new HashSet<int>();
-
-			List<string> prereqs = new List<string>();
-
-			int offset = env.Tasks.Length;
-			List<TaskData> pendingTasks = new List<TaskData>( offset );
-			for ( int i = 0; i < offset; ++i ) {
-				pendingTasks.Add( new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] ) );
-			}
-			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToList();
-
+			int completedTasksCount = 0;
 			int currentTime = 0;
 			double totalCost = 0;
 
-			while ( completedTasks.Count < env.Tasks.Length ) {
+			int offset = env.Tasks.Length;
+			TaskData[] pendingTasks = new TaskData[offset];
+			for ( int i = 0; i < offset; ++i ) {
+				TaskData td = new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] );
+				td.Task = env.Tasks[td.taskId];
+				td.Resource = env.Resources[td.ResourceId];
+				pendingTasks[i] = td;
+			}
+
+			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToArray();
+
+			while ( completedTasksCount < offset ) {
 				bool newRow = false;
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
+				bool allBusy = true;
+
+				int earliest = int.MaxValue;
 				foreach ( Resource r in env.Resources ) {
-					int taskDoneTime = busyResourceMap[r.Id];
+					int taskDoneTime = busyResources[r.Id];
+
+					if ( taskDoneTime > 0 && taskDoneTime < earliest ) {
+						earliest = taskDoneTime;
+					}
 
 					if ( taskDoneTime < 0 ) {
+						// A resource is idle
+						allBusy = false;
 					}
 					else if ( taskDoneTime <= currentTime ) {
-						Task t = env.Tasks[resourceTaskMap[r.Id]];
+						Task t = env.Tasks[resourceTasks[r.Id]];
 						totalCost += t.Duration * r.Cost;
 
-						completedTasks.Add( resourceTaskMap[r.Id] );
-						busyResourceMap[r.Id] = -1;
-						resourceTaskMap[r.Id] = -1;
+						completedTasks[t.Id] = true;
+						completedTasksCount++;
+						busyResources[r.Id] = -1;
+						resourceTasks[r.Id] = -1;
+
+						// A resource is being released
+						allBusy = false;
 					}
 				}
 
-				for ( int i = 0; i < pendingTasks.Count; ++i ) {
+				if ( allBusy ) {
+					// If all resources are currently busy, then don't bother needlessly
+					// looking for a task to insert.
+					// Instead, skip to the time when a resource is freed.
+					currentTime = earliest;
+					continue;
+				}
+
+				for ( int i = 0; i < offset; ++i ) {
 					TaskData td = pendingTasks[i];
+
+					if ( td == null )
+						continue;
 
 					Resource r = env.Resources[td.ResourceId];
 					Task t = env.Tasks[td.taskId];
 
-					if ( !t.Predecessors.All( p => completedTasks.Contains( p ) ) ) {
-						continue;
-					}
-
-					if ( busyResourceMap[td.ResourceId] >= 0 ) {
+					if ( busyResources[td.ResourceId] >= 0 ) {
 						// Resource is busy, we can't complete this task at this point in time.
 						continue;
 					}
 
 					// We can use the resource, so mark it as busy
-					busyResourceMap[td.ResourceId] = currentTime + t.Duration;
-					resourceTaskMap[td.ResourceId] = td.taskId;
+					busyResources[td.ResourceId] = currentTime + t.Duration;
+					resourceTasks[td.ResourceId] = td.taskId;
 
-					pendingTasks.Remove( td );
-					--i;
+					pendingTasks[i] = null;
 
 					if ( !newRow ) {
 						newRow = true;

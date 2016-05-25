@@ -122,30 +122,23 @@ namespace ProjectScheduling.Model
 			int completedTasksCount = 0;
 			int currentTime = 0;
 			double totalCost = 0;
-			double penalty = 0;
 
 			int offset = Tasks.Length;
-			List<TaskData> pendingTasks = new List<TaskData>( offset );
+			TaskData[] pendingTasks = new TaskData[offset];
 			for ( int i = 0; i < offset; ++i ) {
 				TaskData td = new TaskData( i, specimen.Genotype[i], specimen.Genotype[i + offset] );
 				td.Task = Tasks[td.taskId];
 				td.Resource = Resources[td.ResourceId];
-				pendingTasks.Add( td );
+				pendingTasks[i] = td;
 			}
 
-			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToList();
-
-			// TODO: Optionally sort by time to complete, cost, or pick randomly here,
-			// for tasks with the same priority.
-
-			TaskData[] validTasks = pendingTasks.Where( td => td.Task.Predecessors.Length == 0 ).ToArray();
+			pendingTasks = pendingTasks.OrderBy( td => td.Priority ).ToArray();
 
 			while ( completedTasksCount < offset ) {
 				++currentTime;
 
 				// Check whether any tasks have been completed at this time step.
 				bool allBusy = true;
-				bool wasReleased = false;
 
 				int earliest = int.MaxValue;
 				foreach ( Resource r in Resources ) {
@@ -170,7 +163,6 @@ namespace ProjectScheduling.Model
 
 						// A resource is being released
 						allBusy = false;
-						wasReleased = true;
 					}
 				}
 
@@ -181,22 +173,15 @@ namespace ProjectScheduling.Model
 					currentTime = earliest;
 					continue;
 				}
-				else if ( wasReleased ) {
-					// A resource was released, meaning a task was completed -- recompute valid tasks
-					validTasks = pendingTasks.
-						Where( td => td.Task.Predecessors.All( p => completedTasks[p] ) ).
-						OrderBy( td => td.Priority ).
-						ToArray();
-				}
 
-				for ( int i = 0; i < validTasks.Length; ++i ) {
-					TaskData td = validTasks[i];
+				for ( int i = 0; i < offset; ++i ) {
+					TaskData td = pendingTasks[i];
 
 					if ( td == null )
 						continue;
 
-					Resource r = td.Resource;
-					Task t = td.Task;
+					Resource r = Resources[td.ResourceId];
+					Task t = Tasks[td.taskId];
 
 					if ( busyResources[td.ResourceId] >= 0 ) {
 						// Resource is busy, we can't complete this task at this point in time.
@@ -207,12 +192,11 @@ namespace ProjectScheduling.Model
 					busyResources[td.ResourceId] = currentTime + t.Duration;
 					resourceTasks[td.ResourceId] = td.taskId;
 
-					validTasks[i] = null;
-					pendingTasks.Remove( td );
+					pendingTasks[i] = null;
 				}
 			}
 
-			return currentTime + penalty + totalCost / 100000;
+			return currentTime + totalCost / 100000;
 		}
 	}
 }
