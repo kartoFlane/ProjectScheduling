@@ -10,6 +10,7 @@ namespace ProjectScheduling.Model
 		private static List<int>[] _taskResources;
 		// Tasks that can be completed by this resource
 		private static List<int>[] _resourceTasks;
+		private static Resource[] _leastSkilledRes;
 
 		#region Probabilities
 
@@ -29,6 +30,7 @@ namespace ProjectScheduling.Model
 		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
 		public double PenaltyWaitingTask { get; set; }
+		public double PenaltySkill { get; set; }
 
 		#endregion
 
@@ -39,6 +41,7 @@ namespace ProjectScheduling.Model
 
 		private double penaltyIdlePerResource;
 		private double penaltyWaitPerTask;
+		private double penaltySkillPerTask;
 
 		#endregion
 
@@ -59,11 +62,14 @@ namespace ProjectScheduling.Model
 		public void ComputeCache()
 		{
 			_taskResources = new List<int>[Tasks.Length];
+			_leastSkilledRes = new Resource[Tasks.Length];
 			_resourceTasks = new List<int>[Resources.Length];
 
 			for ( int i = 0; i < _resourceTasks.Length; ++i ) {
 				_resourceTasks[i] = new List<int>( Tasks.Length );
 			}
+
+			ResourceSkillComparer skillComparer = new ResourceSkillComparer();
 
 			foreach ( Task t in Tasks ) {
 				var resSet = Resources.ToList().FindAll( r =>
@@ -86,10 +92,30 @@ namespace ProjectScheduling.Model
 				foreach ( int rId in resSet ) {
 					_resourceTasks[rId].Add( t.Id );
 				}
+
+				_leastSkilledRes[t.Id] = Resources[resSet.OrderBy( id => Resources[id], skillComparer ).First()];
 			}
 
 			penaltyIdlePerResource = PenaltyIdleResource / Resources.Length;
 			penaltyWaitPerTask = PenaltyWaitingTask / Tasks.Length;
+			penaltySkillPerTask = PenaltySkill / Tasks.Length;
+		}
+
+		private class ResourceSkillComparer : IComparer<Resource>
+		{
+			public int Compare( Resource r, Resource o )
+			{
+				int sum1 = 0;
+				int sum2 = 0;
+				foreach ( KeyValuePair<int, int> p in r.SkillPool ) {
+					sum1 += p.Value;
+				}
+				foreach ( KeyValuePair<int, int> p in o.SkillPool ) {
+					sum2 += p.Value;
+				}
+
+				return sum1 - sum2;
+			}
 		}
 
 		#region Population Generation / Mutation
@@ -259,6 +285,10 @@ namespace ProjectScheduling.Model
 								penalty += PenaltyRelations;
 							}
 						}
+					}
+
+					if ( r.Id != _leastSkilledRes[t.Id].Id ) {
+						penalty += penaltySkillPerTask;
 					}
 
 					validTasks[i] = null;

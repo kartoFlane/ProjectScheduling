@@ -40,6 +40,7 @@ namespace ProjectScheduling
 		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
 		public double PenaltyWaitingTask { get; set; }
+		public double PenaltySkill { get; set; }
 
 		public string InputDef { get; set; }
 		public string OutputDir { get; set; }
@@ -94,6 +95,7 @@ namespace ProjectScheduling
 			PenaltyRelations = 0.3;
 			PenaltyIdleResource = 0.3;
 			PenaltyWaitingTask = 0.1;
+			PenaltySkill = 0.5;
 		}
 
 		public GeneticAlgorithm( Parameters parameters )
@@ -118,6 +120,7 @@ namespace ProjectScheduling
 			PenaltyRelations = parameters.PenaltyRelations;
 			PenaltyIdleResource = parameters.PenaltyIdleResource;
 			PenaltyWaitingTask = parameters.PenaltyWaitingTask;
+			PenaltySkill = parameters.PenaltySkill;
 		}
 
 		public void Start()
@@ -481,6 +484,7 @@ namespace ProjectScheduling
 			public double PenaltyRelations { get; set; }
 			public double PenaltyIdleResource { get; set; }
 			public double PenaltyWaitingTask { get; set; }
+			public double PenaltySkill { get; set; }
 
 			public string InputDef { get; set; }
 			public string OutputDir { get; set; }
@@ -514,6 +518,7 @@ namespace ProjectScheduling
 				PenaltyRelations = other.PenaltyRelations;
 				PenaltyIdleResource = other.PenaltyIdleResource;
 				PenaltyWaitingTask = other.PenaltyWaitingTask;
+				PenaltySkill = other.PenaltySkill;
 			}
 		}
 	}
