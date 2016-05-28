@@ -9,12 +9,10 @@ namespace ProjectScheduling.Model
 		// Resources that can complete this task
 		private static List<int>[] _taskResources;
 
-		#region Probabilities
-
 		public double ProbabilityMutation { get; set; }
 		public double ProbabilityOffspring { get; set; }
 
-		#endregion
+		public ECrossoverType CrossoverType { get; set; }
 
 		#region Environment Properties
 

@@ -79,7 +79,17 @@ namespace ProjectScheduling.Model
 				ProjectSchedule[] result = new ProjectSchedule[1];
 				result[0] = new ProjectSchedule();
 
-				result[0].CrossOver( this, fiancee, env.Random.Next( 0, Genotype.Count ) );
+				int i = env.Random.Next( 0, Genotype.Count );
+
+				switch ( env.CrossoverType ) {
+					case ECrossoverType.SINGLE_POINT: {
+						result[0].CrossOverSingle( this, fiancee, i );
+					} break;
+					case ECrossoverType.DOUBLE_POINT: {
+						int j = env.Random.Next( i, Genotype.Count );
+						result[0].CrossOverDouble( this, fiancee, i, j );
+					} break;
+				}
 
 				return result;
 			}
@@ -88,10 +98,24 @@ namespace ProjectScheduling.Model
 			}
 		}
 
-		private void CrossOver( ProjectSchedule parentA, ProjectSchedule parentB, int start )
+		private void CrossOverSingle( ProjectSchedule parentA, ProjectSchedule parentB, int start )
 		{
 			for ( int i = 0; i < parentA.Genotype.Count; ++i ) {
 				if ( i <= start )
+					Genotype.Add( parentA.Genotype[i] );
+				else
+					Genotype.Add( parentB.Genotype[i] );
+			}
+			recomputeFitness = true;
+		}
+
+		private void CrossOverDouble(
+			ProjectSchedule parentA, ProjectSchedule parentB,
+			int indexA, int indexB
+		)
+		{
+			for ( int i = 0; i < parentA.Genotype.Count; ++i ) {
+				if ( i <= indexA || i > indexB )
 					Genotype.Add( parentA.Genotype[i] );
 				else
 					Genotype.Add( parentB.Genotype[i] );

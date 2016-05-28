@@ -37,6 +37,7 @@ namespace ProjectScheduling
 		public ECloneEliminationStrategy CloneElimination { get; set; }
 		public ECrossoverStrategy CrossoverStrategy { get; set; }
 		public ESelectionStrategy SelectionStrategy { get; set; }
+		public ECrossoverType CrossoverType { get; set; }
 
 		public string InputDef { get; set; }
 		public string OutputDir { get; set; }
@@ -80,6 +81,7 @@ namespace ProjectScheduling
 			CloneElimination = ECloneEliminationStrategy.MUTATION;
 			CrossoverStrategy = ECrossoverStrategy.SIMPLE_PAIRS;
 			SelectionStrategy = ESelectionStrategy.RANKING;
+			CrossoverType = ECrossoverType.SINGLE_POINT;
 
 			DebugOutput = true;
 
@@ -99,6 +101,7 @@ namespace ProjectScheduling
 			CloneElimination = parameters.CloneElimination;
 			CrossoverStrategy = parameters.CrossoverStrategy;
 			SelectionStrategy = parameters.SelectionStrategy;
+			CrossoverType = parameters.CrossoverType;
 
 			DebugOutput = parameters.DebugOutput;
 
@@ -114,6 +117,7 @@ namespace ProjectScheduling
 
 			env.ProbabilityMutation = MutationChance;
 			env.ProbabilityOffspring = CrossoverChance;
+			env.CrossoverType = CrossoverType;
 
 			defFile = new FileInfo( InputDef );
 
@@ -443,6 +447,7 @@ namespace ProjectScheduling
 			buf.AppendFormat( "Clone elim. strategy: {0}\n", CloneElimination.ToString() );
 			buf.AppendFormat( "Crossover strategy: {0}\n", CrossoverStrategy.ToString() );
 			buf.AppendFormat( "Selection strategy: {0}\n", SelectionStrategy.ToString() );
+			buf.AppendFormat( "Crossover type: {0}\n", CrossoverType.ToString() );
 
 			File.WriteAllText( path, buf.ToString() );
 		}
@@ -459,6 +464,7 @@ namespace ProjectScheduling
 			public ECloneEliminationStrategy CloneElimination { get; set; }
 			public ECrossoverStrategy CrossoverStrategy { get; set; }
 			public ESelectionStrategy SelectionStrategy { get; set; }
+			public ECrossoverType CrossoverType { get; set; }
 
 			public double PenaltyRelations { get; set; }
 			public double PenaltyIdleResource { get; set; }
@@ -485,6 +491,7 @@ namespace ProjectScheduling
 				CloneElimination = other.CloneElimination;
 				CrossoverStrategy = other.CrossoverStrategy;
 				SelectionStrategy = other.SelectionStrategy;
+				CrossoverType = other.CrossoverType;
 
 				DebugOutput = other.DebugOutput;
 
@@ -516,5 +523,11 @@ namespace ProjectScheduling
 	{
 		RANKING,
 		TOURNAMENT
+	}
+
+	public enum ECrossoverType
+	{
+		SINGLE_POINT,
+		DOUBLE_POINT
 	}
 }
