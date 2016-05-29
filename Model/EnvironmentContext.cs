@@ -12,12 +12,9 @@ namespace ProjectScheduling.Model
 		private static List<int>[] _resourceTasks;
 		private static Resource[] _leastSkilledRes;
 
-		#region Probabilities
-
 		public double ProbabilityMutation { get; set; }
 		public double ProbabilityOffspring { get; set; }
-
-		#endregion
+		public ECrossoverType CrossoverType { get; set; }
 
 		#region Environment Functionalities
 

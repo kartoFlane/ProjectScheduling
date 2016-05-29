@@ -19,6 +19,7 @@ namespace ProjectScheduling
 		private DirectoryInfo outputDir;
 
 		private ProjectSchedule allTimeBest;
+		private long timeStart;
 
 		private Dictionary<int, double> minMap;
 		private Dictionary<int, double> avgMap;
@@ -36,6 +37,7 @@ namespace ProjectScheduling
 		public ECloneEliminationStrategy CloneElimination { get; set; }
 		public ECrossoverStrategy CrossoverStrategy { get; set; }
 		public ESelectionStrategy SelectionStrategy { get; set; }
+		public ECrossoverType CrossoverType { get; set; }
 
 		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
@@ -75,16 +77,17 @@ namespace ProjectScheduling
 
 		public GeneticAlgorithm()
 		{
-			GenerationLimit = 500;
-			PopulationSize = 300;
+			GenerationLimit = 200;
+			PopulationSize = 30;
 			TournamentSize = 10;
 			BreederFraction = 1;
 			CloneThreshold = 0.15;
-			MutationChance = 0.015;
+			MutationChance = 0.04;
 			CrossoverChance = 1.00;
 			CloneElimination = ECloneEliminationStrategy.MUTATION;
-			CrossoverStrategy = ECrossoverStrategy.SIMPLE_PAIRS;
+			CrossoverStrategy = ECrossoverStrategy.ORGY;
 			SelectionStrategy = ESelectionStrategy.RANKING;
+			CrossoverType = ECrossoverType.SINGLE_POINT;
 
 			DebugOutput = true;
 			AlgorithmicRelations = true;
@@ -110,6 +113,7 @@ namespace ProjectScheduling
 			CloneElimination = parameters.CloneElimination;
 			CrossoverStrategy = parameters.CrossoverStrategy;
 			SelectionStrategy = parameters.SelectionStrategy;
+			CrossoverType = parameters.CrossoverType;
 
 			DebugOutput = parameters.DebugOutput;
 			AlgorithmicRelations = parameters.AlgorithmicRelations;
@@ -131,6 +135,7 @@ namespace ProjectScheduling
 
 			env.ProbabilityMutation = MutationChance;
 			env.ProbabilityOffspring = CrossoverChance;
+			env.CrossoverType = CrossoverType;
 
 			env.AlgorithmicRelations = AlgorithmicRelations;
 			env.PenaltyRelations = PenaltyRelations;
@@ -171,7 +176,7 @@ namespace ProjectScheduling
 			Console.WriteLine();
 
 			int generationIndex = 0;
-			int timeStart = Environment.TickCount;
+			timeStart = Environment.TickCount;
 
 			while ( !RequestTerminate && generationIndex < GenerationLimit ) {
 				int genTimeStart = Environment.TickCount;
@@ -452,9 +457,12 @@ namespace ProjectScheduling
 		{
 			StringBuilder buf = new StringBuilder();
 
+			double totalTime = ( Environment.TickCount - timeStart ) / 1000.0;
+
 			buf.AppendFormat( "File: {0}\n", defFileName );
 			buf.AppendFormat( "Population: {0}\n", PopulationSize );
 			buf.AppendFormat( "Generations: {0}\n", GenerationLimit );
+			buf.AppendFormat( CultureInfo.InvariantCulture, "Total time: {0}s\n", totalTime );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Breeder fraction: {0}\n", BreederFraction );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Clone threshold: {0}\n", CloneThreshold );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Mutation chance: {0}\n", MutationChance );
@@ -464,6 +472,7 @@ namespace ProjectScheduling
 			buf.AppendFormat( "Crossover strategy: {0}\n", CrossoverStrategy.ToString() );
 			buf.AppendFormat( "Penalty Idle Resource: {0}\n", PenaltyIdleResource );
 			buf.AppendFormat( "Penalty Waiting Task: {0}\n", PenaltyWaitingTask );
+			buf.AppendFormat( "Crossover type: {0}\n", CrossoverType.ToString() );
 
 			File.WriteAllText( path, buf.ToString() );
 		}
@@ -480,6 +489,7 @@ namespace ProjectScheduling
 			public ECloneEliminationStrategy CloneElimination { get; set; }
 			public ECrossoverStrategy CrossoverStrategy { get; set; }
 			public ESelectionStrategy SelectionStrategy { get; set; }
+			public ECrossoverType CrossoverType { get; set; }
 
 			public double PenaltyRelations { get; set; }
 			public double PenaltyIdleResource { get; set; }
@@ -508,6 +518,8 @@ namespace ProjectScheduling
 				CloneElimination = other.CloneElimination;
 				CrossoverStrategy = other.CrossoverStrategy;
 				SelectionStrategy = other.SelectionStrategy;
+				CrossoverType = other.CrossoverType;
+
 
 				DebugOutput = other.DebugOutput;
 				AlgorithmicRelations = other.AlgorithmicRelations;
@@ -541,5 +553,11 @@ namespace ProjectScheduling
 	{
 		RANKING,
 		TOURNAMENT
+	}
+
+	public enum ECrossoverType
+	{
+		SINGLE_POINT,
+		DOUBLE_POINT
 	}
 }

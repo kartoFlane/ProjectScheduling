@@ -195,10 +195,6 @@ namespace ProjectScheduling.Model
 				for ( int i = 0; i < offset; ++i ) {
 					buf.AppendFormat( "\t{0} - {1}\n", i, specimen.Genotype[i + offset] );
 				}
-				buf.Append( "Prerequisites:\n" ).Append( "===================================\n" );
-				foreach ( string s in prereqs ) {
-					buf.Append( "\t" ).Append( s ).Append( "\n" );
-				}
 			}
 
 			File.WriteAllText( path, buf.ToString() );
