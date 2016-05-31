@@ -18,12 +18,6 @@ namespace ProjectScheduling.Model
 
 		#region Environment Functionalities
 
-		/// <summary>
-		/// Whether precedence relations should be handled with an algorithm
-		/// that prevents erroneous assignments. If false, missing a precedence
-		/// relation will result in penalty being applied instead.
-		/// </summary>
-		public bool AlgorithmicRelations { get; set; }
 		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
 		public double PenaltyWaitingTask { get; set; }
@@ -260,7 +254,7 @@ namespace ProjectScheduling.Model
 					Resource r = td.Resource;
 					Task t = td.Task;
 
-					if ( AlgorithmicRelations && !t.Predecessors.All( p => completedTasks[p] ) ) {
+					if ( !t.Predecessors.All( p => completedTasks[p] ) ) {
 						continue;
 					}
 
@@ -274,15 +268,6 @@ namespace ProjectScheduling.Model
 					// We can use the resource, so mark it as busy
 					busyResources[td.ResourceId] = currentTime + t.Duration;
 					resourceTasks[td.ResourceId] = td.taskId;
-
-					if ( !AlgorithmicRelations ) {
-						// Apply penalty for missing predecessor tasks
-						foreach ( int reqId in t.Predecessors ) {
-							if ( !completedTasks[reqId] ) {
-								penalty += PenaltyRelations;
-							}
-						}
-					}
 
 					if ( r.Id != _leastSkilledRes[t.Id].Id ) {
 						penalty += penaltySkillPerTask;

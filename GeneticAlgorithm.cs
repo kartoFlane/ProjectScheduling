@@ -48,7 +48,6 @@ namespace ProjectScheduling
 		public string OutputDir { get; set; }
 
 		public bool DebugOutput { get; set; }
-		public bool AlgorithmicRelations { get; set; }
 
 		#endregion
 
@@ -90,7 +89,6 @@ namespace ProjectScheduling
 			CrossoverType = ECrossoverType.SINGLE_POINT;
 
 			DebugOutput = true;
-			AlgorithmicRelations = true;
 
 			InputDef = "../../../_defs/100_10_48_15.def";
 			OutputDir = "../../../_solutions/";
@@ -116,7 +114,6 @@ namespace ProjectScheduling
 			CrossoverType = parameters.CrossoverType;
 
 			DebugOutput = parameters.DebugOutput;
-			AlgorithmicRelations = parameters.AlgorithmicRelations;
 
 			InputDef = parameters.InputDef;
 			OutputDir = parameters.OutputDir;
@@ -137,7 +134,6 @@ namespace ProjectScheduling
 			env.ProbabilityOffspring = CrossoverChance;
 			env.CrossoverType = CrossoverType;
 
-			env.AlgorithmicRelations = AlgorithmicRelations;
 			env.PenaltyRelations = PenaltyRelations;
 			env.PenaltyIdleResource = PenaltyIdleResource;
 			env.PenaltyWaitingTask = PenaltyWaitingTask;
@@ -345,6 +341,7 @@ namespace ProjectScheduling
 		{
 			for ( int i = 0; i < breeders.Count - 1; i += 2 ) {
 				population.AddRange( breeders.ElementAt( i ).CrossOver( env, breeders.ElementAt( i + 1 ) ) );
+				population.AddRange( breeders.ElementAt( i + 1 ).CrossOver( env, breeders.ElementAt( i ) ) );
 			}
 		}
 
@@ -467,7 +464,6 @@ namespace ProjectScheduling
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Clone threshold: {0}\n", CloneThreshold );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Mutation chance: {0}\n", MutationChance );
 			buf.AppendFormat( CultureInfo.InvariantCulture, "Crossover chance: {0}\n", CrossoverChance );
-			buf.AppendFormat( "Algorithmic prereq: {0}\n", AlgorithmicRelations );
 			buf.AppendFormat( "Clone elim. strategy: {0}\n", CloneElimination.ToString() );
 			buf.AppendFormat( "Crossover strategy: {0}\n", CrossoverStrategy.ToString() );
 			buf.AppendFormat( "Penalty Idle Resource: {0}\n", PenaltyIdleResource );
@@ -500,7 +496,6 @@ namespace ProjectScheduling
 			public string OutputDir { get; set; }
 
 			public bool DebugOutput { get; set; }
-			public bool AlgorithmicRelations { get; set; }
 
 			public Parameters()
 			{
@@ -520,9 +515,7 @@ namespace ProjectScheduling
 				SelectionStrategy = other.SelectionStrategy;
 				CrossoverType = other.CrossoverType;
 
-
 				DebugOutput = other.DebugOutput;
-				AlgorithmicRelations = other.AlgorithmicRelations;
 
 				InputDef = other.InputDef;
 				OutputDir = other.OutputDir;
