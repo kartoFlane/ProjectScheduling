@@ -39,7 +39,6 @@ namespace ProjectScheduling
 		public ESelectionStrategy SelectionStrategy { get; set; }
 		public ECrossoverType CrossoverType { get; set; }
 
-		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
 		public double PenaltyWaitingTask { get; set; }
 		public double PenaltySkill { get; set; }
@@ -93,7 +92,6 @@ namespace ProjectScheduling
 			InputDef = "../../../_defs/100_10_48_15.def";
 			OutputDir = "../../../_solutions/";
 
-			PenaltyRelations = 0.3;
 			PenaltyIdleResource = 0.3;
 			PenaltyWaitingTask = 0.1;
 			PenaltySkill = 0.5;
@@ -118,7 +116,6 @@ namespace ProjectScheduling
 			InputDef = parameters.InputDef;
 			OutputDir = parameters.OutputDir;
 
-			PenaltyRelations = parameters.PenaltyRelations;
 			PenaltyIdleResource = parameters.PenaltyIdleResource;
 			PenaltyWaitingTask = parameters.PenaltyWaitingTask;
 			PenaltySkill = parameters.PenaltySkill;
@@ -134,7 +131,6 @@ namespace ProjectScheduling
 			env.ProbabilityOffspring = CrossoverChance;
 			env.CrossoverType = CrossoverType;
 
-			env.PenaltyRelations = PenaltyRelations;
 			env.PenaltyIdleResource = PenaltyIdleResource;
 			env.PenaltyWaitingTask = PenaltyWaitingTask;
 
@@ -487,7 +483,6 @@ namespace ProjectScheduling
 			public ESelectionStrategy SelectionStrategy { get; set; }
 			public ECrossoverType CrossoverType { get; set; }
 
-			public double PenaltyRelations { get; set; }
 			public double PenaltyIdleResource { get; set; }
 			public double PenaltyWaitingTask { get; set; }
 			public double PenaltySkill { get; set; }
@@ -520,7 +515,6 @@ namespace ProjectScheduling
 				InputDef = other.InputDef;
 				OutputDir = other.OutputDir;
 
-				PenaltyRelations = other.PenaltyRelations;
 				PenaltyIdleResource = other.PenaltyIdleResource;
 				PenaltyWaitingTask = other.PenaltyWaitingTask;
 				PenaltySkill = other.PenaltySkill;

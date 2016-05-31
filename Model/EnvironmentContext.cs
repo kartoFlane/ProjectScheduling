@@ -18,7 +18,6 @@ namespace ProjectScheduling.Model
 
 		#region Environment Functionalities
 
-		public double PenaltyRelations { get; set; }
 		public double PenaltyIdleResource { get; set; }
 		public double PenaltyWaitingTask { get; set; }
 		public double PenaltySkill { get; set; }
