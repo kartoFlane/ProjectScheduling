@@ -186,6 +186,10 @@ namespace ProjectScheduling.Model
 						continue;
 					}
 
+					if ( !t.Predecessors.All( p => completedTasks[p] ) ) {
+						continue;
+					}
+
 					// We can use the resource, so mark it as busy
 					busyResources[td.ResourceId] = currentTime + t.Duration;
 					resourceTasks[td.ResourceId] = td.taskId;
