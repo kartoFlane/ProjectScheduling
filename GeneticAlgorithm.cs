@@ -466,7 +466,6 @@ namespace ProjectScheduling
 			public ESelectionStrategy SelectionStrategy { get; set; }
 			public ECrossoverType CrossoverType { get; set; }
 
-			public double PenaltyRelations { get; set; }
 			public double PenaltyIdleResource { get; set; }
 			public double PenaltyWaitingTask { get; set; }
 
@@ -498,7 +497,6 @@ namespace ProjectScheduling
 				InputDef = other.InputDef;
 				OutputDir = other.OutputDir;
 
-				PenaltyRelations = other.PenaltyRelations;
 				PenaltyIdleResource = other.PenaltyIdleResource;
 				PenaltyWaitingTask = other.PenaltyWaitingTask;
 			}
